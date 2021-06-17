@@ -23,6 +23,7 @@
 
 
 static bool showTestWindow = false;
+static bool showExportPopup = false;
 static ImTextureID logoTextureLight;
 static ImTextureID logoTextureDark;
 static ImTextureID logoTexture;
@@ -190,6 +191,52 @@ static void menuSaveWaves() {
 	if (path) {
 		currentBank.saveWaves(path);
 		free(path);
+	}
+	free(dir);
+}
+
+static void exportPopup() {
+	if (showExportPopup) {
+		showExportPopup = false;
+		ImGui::OpenPopup("Export");
+	}
+
+	ImGui::SetNextWindowContentWidth(400.0);
+	if (ImGui::BeginPopupModal("Export", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
+		ImGui::PushItemWidth(-140.0);
+		//ImGui::InputText("Title (required)", title, sizeof(title));
+		//ImGui::InputText("Author (required)", attribution, sizeof(attribution));
+		//ImGui::InputTextMultiline("Notes", notes, sizeof(notes));
+
+		/*ImGui::TextWrapped("%s", "By sharing the currently loaded wavetable bank to WaveEdit Online, you agree to release this work under the CC0 public domain license.");
+		*/
+
+		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+
+		ImGui::SameLine();
+		bool exportable = true/*(strlen(title) > 0 && strlen(attribution) > 0)*/;
+		if (!exportable)
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
+		if (ImGui::Button("Export")) {
+			if (exportable) {
+				// export the file to osiris.
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		if (!exportable)
+			ImGui::PopStyleVar();
+		ImGui::EndPopup();
+	}
+}
+
+static void menuExport() {
+	char* dir = getLastDir();
+	/*char* path = osdialog_file(OSDIALOG_OPEN_DIR, dir, NULL, NULL);*/
+	bool path = true;
+	if (path) {
+		showExportPopup = true;
+		exportPopup();
+		/*free(path);*/
 	}
 	free(dir);
 }
@@ -400,6 +447,8 @@ void renderMenu() {
 				menuSaveBankAs();
 			if (ImGui::MenuItem("Save Waves to Folder...", NULL))
 				menuSaveWaves();
+			if (ImGui::MenuItem("Export", NULL))
+				menuExport();
 			if (ImGui::MenuItem("Quit", ImGui::GetIO().OSXBehaviors ? "Cmd+Q" : "Ctrl+Q"))
 				menuQuit();
 
