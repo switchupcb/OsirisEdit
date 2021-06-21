@@ -20,6 +20,7 @@
 #include "lodepng/lodepng.h"
 
 #include "tablabels.hpp"
+#include <iostream>
 
 
 static bool showTestWindow = false;
@@ -195,50 +196,10 @@ static void menuSaveWaves() {
 	free(dir);
 }
 
-static void exportPopup() {
-	if (showExportPopup) {
-		showExportPopup = false;
-		ImGui::OpenPopup("Export");
-	}
 
-	ImGui::SetNextWindowContentWidth(400.0);
-	if (ImGui::BeginPopupModal("Export", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
-		ImGui::PushItemWidth(-140.0);
-		//ImGui::InputText("Title (required)", title, sizeof(title));
-		//ImGui::InputText("Author (required)", attribution, sizeof(attribution));
-		//ImGui::InputTextMultiline("Notes", notes, sizeof(notes));
-
-		/*ImGui::TextWrapped("%s", "By sharing the currently loaded wavetable bank to WaveEdit Online, you agree to release this work under the CC0 public domain license.");
-		*/
-
-		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
-
-		ImGui::SameLine();
-		bool exportable = true/*(strlen(title) > 0 && strlen(attribution) > 0)*/;
-		if (!exportable)
-			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
-		if (ImGui::Button("Export")) {
-			if (exportable) {
-				// export the file to osiris.
-				ImGui::CloseCurrentPopup();
-			}
-		}
-		if (!exportable)
-			ImGui::PopStyleVar();
-		ImGui::EndPopup();
-	}
-}
 
 static void menuExport() {
-	char* dir = getLastDir();
-	/*char* path = osdialog_file(OSDIALOG_OPEN_DIR, dir, NULL, NULL);*/
-	bool path = true;
-	if (path) {
-		showExportPopup = true;
-		exportPopup();
-		/*free(path);*/
-	}
-	free(dir);
+	showExportPopup = true;
 }
 
 static void menuQuit() {
@@ -508,6 +469,131 @@ void renderMenu() {
 	}
 }
 
+void renderPopup() {
+	if (showExportPopup) {
+		ImGui::OpenPopup("##export");
+	}
+
+	ImGui::SetNextWindowContentWidth(600.0);
+	if (ImGui::BeginPopupModal("##export", NULL)) {
+		ImGui::PushItemWidth(-140.0);
+		// Directory
+		ImGui::Text("Output");
+		ImGui::Separator();
+		ImGui::Dummy(ImVec2(0.0f, 5.0f));
+		
+		static char exportFilename[1024] = "";
+		ImGui::Text("Directory:");
+		ImGui::SameLine();
+		ImGui::PushItemWidth(-70);
+		ImGui::InputText("", exportFilename, sizeof(exportFilename));
+		ImGui::SameLine();
+		if (ImGui::Button("Browse..")) {
+			char *dir = getLastDir();
+			char *path = osdialog_file(OSDIALOG_OPEN_DIR, dir, NULL, NULL);
+			snprintf(exportFilename, sizeof(exportFilename), "%s", path);
+			free(path);
+			free(dir);
+		}
+		ImGui::Dummy(ImVec2(0.0f, 15.0f));
+
+		// Sample Rate
+		ImGui::Text("Wave Configuration");
+		ImGui::Separator();
+		ImGui::Dummy(ImVec2(0.0f, 5.0f));
+		ImGui::Text("Sample Rate:");
+		ImGui::SameLine();
+		const char* sampleRates[] = {"8000", "11025", "16000", "22050", "32000", "44100", "48000", "88200", "96000"};
+		static int rate = -1;
+		ImGui::PushItemWidth(-1);
+		ImGui::Combo("##rate", &rate, sampleRates, IM_ARRAYSIZE(sampleRates));
+
+		// WAV bit depth
+		ImGui::Text("Bit Depth:  ");
+		ImGui::SameLine();
+		const char* bitDepths[] = {"8", "16", "32"};
+		static int depth = -1;
+		ImGui::Combo("##depth", &depth, bitDepths, IM_ARRAYSIZE(bitDepths));
+
+		// Wave and Bank sliders
+
+		static int height = 1;
+		static int width = 1;
+		ImGui::Text("Bank Width: ");
+		ImGui::SameLine();
+		ImGui::SliderInt("##width", &width, 1, 2048);
+		ImGui::Text("Bank Height:");
+		ImGui::SameLine();
+		ImGui::SliderInt("##height", &height, 1, 2048);
+		ImGui::Dummy(ImVec2(0.0f, 5.0f));
+		ImGui::Text("Bank Length (Max 2048): %d", std::min(width * height, 2048));
+		ImGui::Dummy(ImVec2(0.0f, 5.0f));
+		const char* waveLengths[] = {"8", "16", "32", "64", "128", "256", "512", "1028", "2048"};
+		static int wavelength = -1;
+		ImGui::Text("Wave Length:");
+		ImGui::SameLine();
+		ImGui::Combo("##wavelength", &wavelength, waveLengths, IM_ARRAYSIZE(waveLengths));
+
+		bool error = depth < 0 || rate < 0 || wavelength < 0;
+		if (error) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(ImColor(255,0,0)));
+			ImGui::Text("Must select bit depth, sample rate, wavelength, and a valid directory");
+			ImGui::PopStyleColor();
+		}
+		if (ImGui::Button("Export")) {
+			if (!error) {
+				long bitData[] = {SF_FORMAT_PCM_S8, SF_FORMAT_PCM_16, SF_FORMAT_PCM_32};
+				SF_INFO info;
+				info.samplerate = atoi(sampleRates[rate]);
+				info.channels = 1;
+				info.format = SF_FORMAT_WAV | bitData[depth] | SF_ENDIAN_LITTLE;
+				currentBank.saveWaves(exportFilename, info, std::min(width * height, 2048), atoi(waveLengths[wavelength]));
+				ImGui::CloseCurrentPopup();
+				showExportPopup = false;
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel")) {
+			ImGui::CloseCurrentPopup();
+			showExportPopup = false;
+		}
+		ImGui::EndPopup();
+	}
+}
+
+static void exportPopup() {
+	if (showExportPopup) {
+		showExportPopup = false;
+		ImGui::OpenPopup("Export");
+	}
+
+	ImGui::SetNextWindowContentWidth(400.0);
+	if (ImGui::BeginPopupModal("Export", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
+		ImGui::PushItemWidth(-140.0);
+		//ImGui::InputText("Title (required)", title, sizeof(title));
+		//ImGui::InputText("Author (required)", attribution, sizeof(attribution));
+		//ImGui::InputTextMultiline("Notes", notes, sizeof(notes));
+
+		/*ImGui::TextWrapped("%s", "By sharing the currently loaded wavetable bank to WaveEdit Online, you agree to release this work under the CC0 public domain license.");
+		*/
+
+		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+
+		ImGui::SameLine();
+		bool exportable = true/*(strlen(title) > 0 && strlen(attribution) > 0)*/;
+		if (!exportable)
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
+		if (ImGui::Button("Export")) {
+			if (exportable) {
+				// export the file to osiris.
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		if (!exportable)
+			ImGui::PopStyleVar();
+		ImGui::EndPopup();
+	}
+}
 
 void renderPreview() {
 	ImGui::Checkbox("Play", &playEnabled);
@@ -812,6 +898,7 @@ void renderMain() {
 	{
 		// Menu bar
 		renderMenu();
+		renderPopup();
 		renderPreview();
 		// Tab bar
 		{

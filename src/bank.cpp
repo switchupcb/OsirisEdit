@@ -1,6 +1,32 @@
 #include "WaveEdit.hpp"
 #include <string.h>
 #include <sndfile.h>
+#include <iostream>
+
+
+int createFolder(const char *path) {
+	char foldername[1024];
+	snprintf(foldername, sizeof(foldername), "%s", path);
+	std::string command = "mkdir ";
+	command += foldername;
+	return system(command.c_str());
+}
+
+int removeFolder(const char * path) {
+	char foldername[1024];
+	snprintf(foldername, sizeof(foldername), "%s", path);
+	#ifdef ARCH_LIN
+		std::string command = "rm -r ";
+		command += foldername;
+		return system(command.c_str());
+	#endif
+	#ifdef ARCH_WIN
+		std::string command = "rmdir /s /q ";
+		command += foldername;
+		return system(command.c_str());
+	#endif
+	return 1;
+}
 
 
 void Bank::clear() {
@@ -92,6 +118,16 @@ void Bank::saveWAV(const char *filename) {
 	sf_close(sf);
 }
 
+void Bank::saveWAV(const char *filename, SF_INFO info, long bank_len, long wave_len) {
+	SNDFILE *sf = sf_open(filename, SFM_WRITE, &info);
+	if (!sf)
+		return;
+	for (int j = 0; j < bank_len; j++) {
+		sf_write_float(sf, waves[j].postSamples, wave_len);
+	}
+	
+	sf_close(sf);
+}
 
 void Bank::loadWAV(const char *filename) {
 	clear();
@@ -118,3 +154,27 @@ void Bank::saveWaves(const char *dirname) {
 		waves[b].saveWAV(filename);
 	}
 }
+
+void Bank::saveWaves(const char *dirname, SF_INFO info, long bank_len, long wave_len) {
+	char *fileTemp = strdup(dirname);
+
+	if (createFolder(strcat(fileTemp, "/osiris")) != 0) {
+		removeFolder(fileTemp);
+		createFolder(fileTemp);
+	}
+	int l = bank_len;
+	if (bank_len > BANK_LEN) {
+		l = BANK_LEN;
+	}
+
+	for (int b = 0; b < l; b++) {
+		char filename[1024];
+		char waveFolder[1024];
+		int estimate = l / 4; 
+		snprintf(waveFolder, sizeof(waveFolder), "%s/Bank-%c", fileTemp, std::min(b / estimate + 'A', (int)'D'));
+		createFolder(waveFolder);
+		snprintf(filename, sizeof(filename), "%s/%02d.wav", waveFolder, b);
+		waves[b].saveWAV(filename, info, bank_len, wave_len);
+	}
+}
+

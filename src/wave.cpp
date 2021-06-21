@@ -284,6 +284,15 @@ void Wave::saveWAV(const char *filename) {
 	sf_close(sf);
 }
 
+void Wave::saveWAV(const char *filename, SF_INFO info, long bank_len, long wave_len) {
+	SNDFILE *sf = sf_open(filename, SFM_WRITE, &info);
+	if (!sf)
+		return;
+	sf_write_float(sf, postSamples, WAVE_LEN);
+
+	sf_close(sf);
+}
+
 void Wave::loadWAV(const char *filename) {
 	clear();
 

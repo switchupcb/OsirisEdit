@@ -11,7 +11,7 @@
 #include <thread>
 #include <vector>
 #include <complex>
-
+#include <sndfile.h>
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -165,6 +165,7 @@ struct Wave {
 	void bakeEffects();
 	void randomizeEffects();
 	void saveWAV(const char *filename);
+	void saveWAV(const char *filename, SF_INFO info, long bank_len, long wave_len);
 	void loadWAV(const char *filename);
 	/** Writes to a global state */
 	void clipboardCopy();
@@ -197,9 +198,11 @@ struct Bank {
 	void load(const char *filename);
 	/** WAV file with BANK_LEN * WAVE_LEN samples */
 	void saveWAV(const char *filename);
+	void saveWAV(const char *filename, SF_INFO info, long bank_len, long wave_len);
 	void loadWAV(const char *filename);
 	/** Saves each wave to its own file in a directory */
 	void saveWaves(const char *dirname);
+	void saveWaves(const char *dirname, SF_INFO info, long bank_len, long wave_len);
 };
 
 
