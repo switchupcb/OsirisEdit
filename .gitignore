@@ -2,5 +2,5 @@
 dep/*
 ext/*
 !dep/Makefile
-logo.ico
 autosave.dat
+ui.dat

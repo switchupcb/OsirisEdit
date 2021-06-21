@@ -52,75 +52,75 @@ endif
 
 
 .DEFAULT_GOAL := build
-build: WaveEdit
+build: OsirisEdit
 
-run: WaveEdit
-	LD_LIBRARY_PATH=dep/lib ./WaveEdit
+run: OsirisEdit
+	LD_LIBRARY_PATH=dep/lib ./OsirisEdit
 
-debug: WaveEdit
+debug: OsirisEdit
 ifeq ($(ARCH),mac)
-	lldb ./WaveEdit
+	lldb ./OsirisEdit
 else
-	gdb -ex 'run' ./WaveEdit
+	gdb -ex 'run' ./OsirisEdit
 endif
 
 
 OBJECTS += $(SOURCES:%=build/%.o)
 
 
-WaveEdit: $(OBJECTS)
+OsirisEdit: $(OBJECTS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 clean:
-	rm -frv $(OBJECTS) WaveEdit dist
+	rm -frv $(OBJECTS) OsirisEdit dist
 
 
 .PHONY: dist
-dist: WaveEdit
-	mkdir -p dist/WaveEdit
-	cp -R banks dist/WaveEdit
-	cp LICENSE* dist/WaveEdit
-	cp doc/manual.pdf dist/WaveEdit
+dist: OsirisEdit
+	mkdir -p dist/OsirisEdit
+	cp -R banks dist/OsirisEdit
+	cp LICENSE* dist/OsirisEdit
+	cp doc/manual.pdf dist/OsirisEdit
 ifeq ($(ARCH),lin)
-	cp -R logo*.png fonts catalog dist/WaveEdit
-	cp WaveEdit WaveEdit.sh dist/WaveEdit
-	cp dep/lib/libSDL2-2.0.so.0 dist/WaveEdit
-	cp dep/lib/libsamplerate.so.0 dist/WaveEdit
-	cp dep/lib/libsndfile.so.1 dist/WaveEdit
-	cp dep/lib/libjansson.so.4 dist/WaveEdit
-	cp dep/lib/libcurl.so.4 dist/WaveEdit
+	cp -R logo*.png fonts catalog dist/OsirisEdit
+	cp OsirisEdit OsirisEdit.sh dist/OsirisEdit
+	cp dep/lib/libSDL2-2.0.so.0 dist/OsirisEdit
+	cp dep/lib/libsamplerate.so.0 dist/OsirisEdit
+	cp dep/lib/libsndfile.so.1 dist/OsirisEdit
+	cp dep/lib/libjansson.so.4 dist/OsirisEdit
+	cp dep/lib/libcurl.so.4 dist/OsirisEdit
 else ifeq ($(ARCH),mac)
-	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/Resources
-	cp Info.plist dist/WaveEdit/WaveEdit.app/Contents
-	cp WaveEdit dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	cp -R logo*.png logo.icns fonts catalog dist/WaveEdit/WaveEdit.app/Contents/Resources
+	mkdir -p dist/OsirisEdit/OsirisEdit.app/Contents/MacOS
+	mkdir -p dist/OsirisEdit/OsirisEdit.app/Contents/Resources
+	cp Info.plist dist/OsirisEdit/OsirisEdit.app/Contents
+	cp OsirisEdit dist/OsirisEdit/OsirisEdit.app/Contents/MacOS
+	cp -R logo*.png logo.icns fonts catalog dist/OsirisEdit/OsirisEdit.app/Contents/Resources
 	# Remap dylibs in executable
-	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp dep/lib/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/dep/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp dep/lib/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/dep/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp dep/lib/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/dep/lib/libsndfile.1.dylib @executable_path/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp dep/lib/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/dep/lib/libjansson.4.dylib @executable_path/libjansson.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp dep/lib/libcurl.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/dep/lib/libcurl.4.dylib @executable_path/libcurl.4.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	otool -L dist/OsirisEdit/OsirisEdit.app/Contents/MacOS/OsirisEdit
+	cp dep/lib/libSDL2-2.0.0.dylib dist/OsirisEdit/OsirisEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/dep/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib dist/OsirisEdit/OsirisEdit.app/Contents/MacOS/OsirisEdit
+	cp dep/lib/libsamplerate.0.dylib dist/OsirisEdit/OsirisEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/dep/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/OsirisEdit/OsirisEdit.app/Contents/MacOS/OsirisEdit
+	cp dep/lib/libsndfile.1.dylib dist/OsirisEdit/OsirisEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/dep/lib/libsndfile.1.dylib @executable_path/libsndfile.1.dylib dist/OsirisEdit/OsirisEdit.app/Contents/MacOS/OsirisEdit
+	cp dep/lib/libjansson.4.dylib dist/OsirisEdit/OsirisEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/dep/lib/libjansson.4.dylib @executable_path/libjansson.4.dylib dist/OsirisEdit/OsirisEdit.app/Contents/MacOS/OsirisEdit
+	cp dep/lib/libcurl.4.dylib dist/OsirisEdit/OsirisEdit.app/Contents/MacOS
+	install_name_tool -change $(PWD)/dep/lib/libcurl.4.dylib @executable_path/libcurl.4.dylib dist/OsirisEdit/OsirisEdit.app/Contents/MacOS/OsirisEdit
+	otool -L dist/OsirisEdit/OsirisEdit.app/Contents/MacOS/OsirisEdit
 else ifeq ($(ARCH),win)
-	cp -R logo*.png fonts catalog dist/WaveEdit
-	cp WaveEdit.exe dist/WaveEdit
-	cp /mingw32/bin/libgcc_s_dw2-1.dll dist/WaveEdit
-	cp /mingw32/bin/libwinpthread-1.dll dist/WaveEdit
-	cp /mingw32/bin/libstdc++-6.dll dist/WaveEdit
-	cp dep/bin/SDL2.dll dist/WaveEdit
-	cp dep/bin/libsamplerate-0.dll dist/WaveEdit
-	cp dep/bin/libsndfile-1.dll dist/WaveEdit
-	cp dep/bin/libjansson-4.dll dist/WaveEdit
-	cp dep/bin/libcurl-4.dll dist/WaveEdit
+	cp -R logo*.png fonts catalog dist/OsirisEdit
+	cp OsirisEdit.exe dist/OsirisEdit
+	cp /mingw32/bin/libgcc_s_dw2-1.dll dist/OsirisEdit
+	cp /mingw32/bin/libwinpthread-1.dll dist/OsirisEdit
+	cp /mingw32/bin/libstdc++-6.dll dist/OsirisEdit
+	cp dep/bin/SDL2.dll dist/OsirisEdit
+	cp dep/bin/libsamplerate-0.dll dist/OsirisEdit
+	cp dep/bin/libsndfile-1.dll dist/OsirisEdit
+	cp dep/bin/libjansson-4.dll dist/OsirisEdit
+	cp dep/bin/libcurl-4.dll dist/OsirisEdit
 endif
-	cd dist && zip -9 -r WaveEdit-$(VERSION)-$(ARCH).zip WaveEdit
+	cd dist && zip -9 -r OsirisEdit-$(VERSION)-$(ARCH).zip OsirisEdit
 
 
 # SUFFIXES:

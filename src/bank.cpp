@@ -1,4 +1,4 @@
-#include "WaveEdit.hpp"
+#include "OsirisEdit.hpp"
 #include <string.h>
 #include <sndfile.h>
 #include <iostream>

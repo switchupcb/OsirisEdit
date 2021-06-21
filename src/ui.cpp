@@ -1,4 +1,4 @@
-#include "WaveEdit.hpp"
+#include "OsirisEdit.hpp"
 
 #ifdef ARCH_LIN
 	#include <linux/limits.h>

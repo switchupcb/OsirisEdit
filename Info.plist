@@ -5,9 +5,9 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleName</key>
-	<string>Synthesis Technology WaveEdit</string>
+	<string>Synthesis Technology Modification OsirisEdit</string>
 	<key>CFBundleDisplayName</key>
-	<string>WaveEdit</string>
+	<string>OsirisEdit</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.synthtech.waveedit</string>
 	<key>CFBundlePackageType</key>

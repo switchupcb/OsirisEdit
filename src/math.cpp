@@ -1,4 +1,4 @@
-#include "WaveEdit.hpp"
+#include "OsirisEdit.hpp"
 #include <string.h>
 #include "pffft/pffft.h"
 #include <samplerate.h>

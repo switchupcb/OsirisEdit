@@ -1,4 +1,4 @@
-#include "WaveEdit.hpp"
+#include "OsirisEdit.hpp"
 
 #include <time.h>
 

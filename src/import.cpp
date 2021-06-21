@@ -1,4 +1,4 @@
-#include "WaveEdit.hpp"
+#include "OsirisEdit.hpp"
 
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS

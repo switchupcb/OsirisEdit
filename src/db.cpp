@@ -1,4 +1,4 @@
-#include "WaveEdit.hpp"
+#include "OsirisEdit.hpp"
 
 #include <thread>
 #include <curl/curl.h>
