@@ -4,3 +4,4 @@ ext/*
 !dep/Makefile
 autosave.dat
 ui.dat
+.vs*
