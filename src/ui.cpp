@@ -474,33 +474,37 @@ void renderPopup() {
 		ImGui::OpenPopup("##export");
 	}
 
-	ImGui::SetNextWindowContentWidth(600.0);
+	ImGui::SetNextWindowContentWidth(800.0);
 	if (ImGui::BeginPopupModal("##export", NULL)) {
 		ImGui::PushItemWidth(-140.0);
-		// Directory
+
+		// Header
 		ImGui::Text("Output");
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 		
-		static char exportFilename[1024] = "";
-		ImGui::Text("Directory:");
+		// Source Directory
+		static char sourceFilename[1024] = "";
+		ImGui::Text("Source:");
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-70);
-		ImGui::InputText("", exportFilename, sizeof(exportFilename));
+		ImGui::InputText("", sourceFilename, sizeof(sourceFilename));
 		ImGui::SameLine();
 		if (ImGui::Button("Browse..")) {
 			char *dir = getLastDir();
 			char *path = osdialog_file(OSDIALOG_OPEN_DIR, dir, NULL, NULL);
-			snprintf(exportFilename, sizeof(exportFilename), "%s", path);
+			snprintf(sourceFilename, sizeof(sourceFilename), "%s", path);
 			free(path);
 			free(dir);
 		}
 		ImGui::Dummy(ImVec2(0.0f, 15.0f));
 
-		// Sample Rate
+		// Export Configuration Header
 		ImGui::Text("Wave Configuration");
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
+
+		// Sample Rate
 		ImGui::Text("Sample Rate:");
 		ImGui::SameLine();
 		const char* sampleRates[] = {"8000", "11025", "16000", "22050", "32000", "44100", "48000", "88200", "96000"};
@@ -508,31 +512,63 @@ void renderPopup() {
 		ImGui::PushItemWidth(-1);
 		ImGui::Combo("##rate", &rate, sampleRates, IM_ARRAYSIZE(sampleRates));
 
-		// WAV bit depth
+		// WAV Bit Depth
 		ImGui::Text("Bit Depth:  ");
 		ImGui::SameLine();
 		const char* bitDepths[] = {"8", "16", "32"};
 		static int depth = -1;
 		ImGui::Combo("##depth", &depth, bitDepths, IM_ARRAYSIZE(bitDepths));
 
-		// Wave and Bank sliders
-
+		// Wave Bank Length (Width * Height)
+		const char* bankSizes[] = { "16", "32", "64" };
 		static int height = 1;
 		static int width = 1;
-		ImGui::Text("Bank Width: ");
-		ImGui::SameLine();
-		ImGui::SliderInt("##width", &width, 1, 2048);
-		ImGui::Text("Bank Height:");
-		ImGui::SameLine();
-		ImGui::SliderInt("##height", &height, 1, 2048);
+
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 		ImGui::Text("Bank Length (Max 2048): %d", std::min(width * height, 2048));
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
+
+		ImGui::Text("Bank Width: ");
+		ImGui::SameLine();
+		ImGui::Combo("##width", &width, bankWidths, IM_ARRAYSIZE(bankSizes));
+
+		ImGui::Text("Bank Height:");
+		ImGui::SameLine();
+		ImGui::Combo("##width", &height, bankWidths, IM_ARRAYSIZE(bankSizes));
+
+		// Wave Length
 		const char* waveLengths[] = {"8", "16", "32", "64", "128", "256", "512", "1028", "2048"};
 		static int wavelength = -1;
 		ImGui::Text("Wave Length:");
 		ImGui::SameLine();
 		ImGui::Combo("##wavelength", &wavelength, waveLengths, IM_ARRAYSIZE(waveLengths));
+
+		// Destination Header
+		ImGui::Separator();
+		ImGui::Dummy(ImVec2(0.0f, 5.0f));
+		ImGui::Text("Destination");
+		ImGui::Separator();
+		ImGui::Dummy(ImVec2(0.0f, 5.0f));
+
+		// Destination Directory
+		static char exportFilename[1024] = "";
+		ImGui::Text("Directory:");
+		ImGui::SameLine();
+		ImGui::PushItemWidth(-70);
+		ImGui::InputText("", exportFilename, sizeof(exportFilename));
+		ImGui::SameLine();
+		if (ImGui::Button("Browse..")) {
+			char* dir = getLastDir();
+			char* path = osdialog_file(OSDIALOG_OPEN_DIR, dir, NULL, NULL);
+			snprintf(exportFilename, sizeof(exportFilename), "%s", path);
+			free(path);
+			free(dir);
+		}
+
+		// Selected Banks
+		/// Banks A, B, C, D are selectable.
+		ImGui::Dummy(ImVec2(0.0f, 15.0f));
+
 
 		bool error = depth < 0 || rate < 0 || wavelength < 0;
 		if (error) {
