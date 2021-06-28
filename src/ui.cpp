@@ -508,7 +508,7 @@ void renderPopup() {
 		ImGui::Text("Sample Rate:");
 		ImGui::SameLine();
 		const char* sampleRates[] = {"8000", "11025", "16000", "22050", "32000", "44100", "48000", "88200", "96000"};
-		static int rate = -1;
+		static int rate = 44100;
 		ImGui::PushItemWidth(-1);
 		ImGui::Combo("##rate", &rate, sampleRates, IM_ARRAYSIZE(sampleRates));
 
@@ -516,13 +516,13 @@ void renderPopup() {
 		ImGui::Text("Bit Depth:  ");
 		ImGui::SameLine();
 		const char* bitDepths[] = {"8", "16", "32"};
-		static int depth = -1;
+		static int depth = 16;
 		ImGui::Combo("##depth", &depth, bitDepths, IM_ARRAYSIZE(bitDepths));
 
 		// Wave Bank Length (Width * Height)
 		const char* bankSizes[] = { "16", "32", "64" };
-		static int height = 1;
-		static int width = 1;
+		static int height = 32;
+		static int width = 32;
 
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 		ImGui::Text("Bank Length (Max 2048): %d", std::min(width * height, 2048));
@@ -538,7 +538,7 @@ void renderPopup() {
 
 		// Wave Length
 		const char* waveLengths[] = {"8", "16", "32", "64", "128", "256", "512", "1028", "2048"};
-		static int wavelength = -1;
+		static int wavelength = 256;
 		ImGui::Text("Wave Length:");
 		ImGui::SameLine();
 		ImGui::Combo("##wavelength", &wavelength, waveLengths, IM_ARRAYSIZE(waveLengths));
