@@ -24,7 +24,7 @@
 
 
 static bool showTestWindow = false;
-static bool showExportPopup = false;
+static bool showConvertPopup = false;
 static ImTextureID logoTextureLight;
 static ImTextureID logoTextureDark;
 static ImTextureID logoTexture;
@@ -198,8 +198,8 @@ static void menuSaveWaves() {
 
 
 
-static void menuExport() {
-	showExportPopup = true;
+static void menuConvert() {
+	showConvertPopup = true;
 }
 
 static void menuQuit() {
@@ -408,8 +408,8 @@ void renderMenu() {
 				menuSaveBankAs();
 			if (ImGui::MenuItem("Save Waves to Folder...", NULL))
 				menuSaveWaves();
-			if (ImGui::MenuItem("Export", NULL))
-				menuExport();
+			if (ImGui::MenuItem("Convert", NULL))
+				menuConvert();
 			if (ImGui::MenuItem("Quit", ImGui::GetIO().OSXBehaviors ? "Cmd+Q" : "Ctrl+Q"))
 				menuQuit();
 
@@ -470,12 +470,12 @@ void renderMenu() {
 }
 
 void renderPopup() {
-	if (showExportPopup) {
-		ImGui::OpenPopup("##export");
+	if (showConvertPopup) {
+		ImGui::OpenPopup("##convert");
 	}
 
 	ImGui::SetNextWindowContentWidth(800.0);
-	if (ImGui::BeginPopupModal("##export", NULL)) {
+	if (ImGui::BeginPopupModal("##convert", NULL)) {
 		ImGui::PushItemWidth(-140.0);
 
 		// Header
@@ -499,7 +499,7 @@ void renderPopup() {
 		}
 		ImGui::Dummy(ImVec2(0.0f, 15.0f));
 
-		// Export Configuration Header
+		// Convert Configuration Header
 		ImGui::Text("Wave Configuration");
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
@@ -551,16 +551,16 @@ void renderPopup() {
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
 		// Destination Directory
-		static char exportFilename[1024] = "";
+		static char convertFilename[1024] = "";
 		ImGui::Text("Directory:");
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-70);
-		ImGui::InputText("", exportFilename, sizeof(exportFilename));
+		ImGui::InputText("", convertFilename, sizeof(convertFilename));
 		ImGui::SameLine();
 		if (ImGui::Button("Browse..")) {
 			char* dir = getLastDir();
 			char* path = osdialog_file(OSDIALOG_OPEN_DIR, dir, NULL, NULL);
-			snprintf(exportFilename, sizeof(exportFilename), "%s", path);
+			snprintf(convertFilename, sizeof(convertFilename), "%s", path);
 			free(path);
 			free(dir);
 		}
@@ -576,35 +576,35 @@ void renderPopup() {
 			ImGui::Text("Must select bit depth, sample rate, wavelength, and a valid directory");
 			ImGui::PopStyleColor();
 		}
-		if (ImGui::Button("Export")) {
+		if (ImGui::Button("Convert")) {
 			if (!error) {
 				long bitData[] = {SF_FORMAT_PCM_S8, SF_FORMAT_PCM_16, SF_FORMAT_PCM_32};
 				SF_INFO info;
 				info.samplerate = atoi(sampleRates[rate]);
 				info.channels = 1;
 				info.format = SF_FORMAT_WAV | bitData[depth] | SF_ENDIAN_LITTLE;
-				currentBank.saveWaves(exportFilename, info, std::min(width * height, 2048), atoi(waveLengths[wavelength]));
+				currentBank.saveWaves(convertFilename, info, std::min(width * height, 2048), atoi(waveLengths[wavelength]));
 				ImGui::CloseCurrentPopup();
-				showExportPopup = false;
+				showConvertPopup = false;
 			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Cancel")) {
 			ImGui::CloseCurrentPopup();
-			showExportPopup = false;
+			showConvertPopup = false;
 		}
 		ImGui::EndPopup();
 	}
 }
 
-static void exportPopup() {
-	if (showExportPopup) {
-		showExportPopup = false;
-		ImGui::OpenPopup("Export");
+static void convertPopup() {
+	if (showConvertPopup) {
+		showConvertPopup = false;
+		ImGui::OpenPopup("Convert");
 	}
 
 	ImGui::SetNextWindowContentWidth(400.0);
-	if (ImGui::BeginPopupModal("Export", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
+	if (ImGui::BeginPopupModal("Convert", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
 		ImGui::PushItemWidth(-140.0);
 		//ImGui::InputText("Title (required)", title, sizeof(title));
 		//ImGui::InputText("Author (required)", attribution, sizeof(attribution));
@@ -616,16 +616,16 @@ static void exportPopup() {
 		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
 
 		ImGui::SameLine();
-		bool exportable = true/*(strlen(title) > 0 && strlen(attribution) > 0)*/;
-		if (!exportable)
+		bool convertable = true/*(strlen(title) > 0 && strlen(attribution) > 0)*/;
+		if (!convertable)
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
-		if (ImGui::Button("Export")) {
-			if (exportable) {
-				// export the file to osiris.
+		if (ImGui::Button("Convert")) {
+			if (convertable) {
+				// Convert the file to osiris.
 				ImGui::CloseCurrentPopup();
 			}
 		}
-		if (!exportable)
+		if (!convertable)
 			ImGui::PopStyleVar();
 		ImGui::EndPopup();
 	}
