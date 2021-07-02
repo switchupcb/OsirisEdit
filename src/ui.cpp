@@ -27,7 +27,7 @@
 #include <vector>
 
 static bool showTestWindow = false;
-static bool showConvertPopup = true;
+static bool showConvertPopup = false;
 static ImTextureID logoTextureLight;
 static ImTextureID logoTextureDark;
 static ImTextureID logoTexture;
@@ -567,7 +567,7 @@ void renderPopup()
 		ImGui::PushItemWidth(-140.0);
 
 		// Header
-		ImGui::Text("Output");
+		ImGui::Text("SOURCE");
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
@@ -589,7 +589,7 @@ void renderPopup()
 		ImGui::Dummy(ImVec2(0.0f, 15.0f));
 
 		// Convert Configuration Header
-		ImGui::Text("Wave Configuration");
+		ImGui::Text("WAVE CONFIGURATION");
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
@@ -628,7 +628,7 @@ void renderPopup()
 
 		// Wave Length
 		const char *waveLengths[] = {"8", "16", "32", "64", "128", "256", "512", "1028", "2048"};
-		static int wavelength = 256;
+		static int wavelength = 3;
 		ImGui::Text("Wave Length:");
 		ImGui::SameLine();
 		ImGui::Combo("##wavelength", &wavelength, waveLengths, IM_ARRAYSIZE(waveLengths));
@@ -685,7 +685,7 @@ void renderPopup()
 		if (error)
 		{
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(ImColor(255, 0, 0)));
-			ImGui::Text("Must select bit depth, sample rate, wavelength, and a valid directory");
+			ImGui::Text("Must select bit depth, sample rate, wavelength, at least one folder, and a valid directory");
 			ImGui::PopStyleColor();
 		}
 		if (ImGui::Button("Convert"))
