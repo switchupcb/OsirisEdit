@@ -4,31 +4,6 @@
 #include <iostream>
 
 
-int createFolder(const char *path) {
-	char foldername[1024];
-	snprintf(foldername, sizeof(foldername), "%s", path);
-	std::string command = "mkdir ";
-	command += foldername;
-	return system(command.c_str());
-}
-
-int removeFolder(const char * path) {
-	char foldername[1024];
-	snprintf(foldername, sizeof(foldername), "%s", path);
-	#ifdef ARCH_LIN
-		std::string command = "rm -r ";
-		command += foldername;
-		return system(command.c_str());
-	#endif
-	#ifdef ARCH_WIN
-		std::string command = "rmdir /s /q ";
-		command += foldername;
-		return system(command.c_str());
-	#endif
-	return 1;
-}
-
-
 void Bank::clear() {
 	// The lazy way
 	memset(this, 0, sizeof(Bank));
@@ -152,29 +127,6 @@ void Bank::saveWaves(const char *dirname) {
 		snprintf(filename, sizeof(filename), "%s/%02d.wav", dirname, b);
 
 		waves[b].saveWAV(filename);
-	}
-}
-
-void Bank::saveWaves(const char *dirname, SF_INFO info, long bank_len, long wave_len) {
-	char *fileTemp = strdup(dirname);
-
-	if (createFolder(strcat(fileTemp, "/osiris")) != 0) {
-		removeFolder(fileTemp);
-		createFolder(fileTemp);
-	}
-	int l = bank_len;
-	if (bank_len > BANK_LEN) {
-		l = BANK_LEN;
-	}
-
-	for (int b = 0; b < l; b++) {
-		char filename[1024];
-		char waveFolder[1024];
-		int estimate = l / 4; 
-		snprintf(waveFolder, sizeof(waveFolder), "%s/Bank-%c", fileTemp, std::min(b / estimate + 'A', (int)'D'));
-		createFolder(waveFolder);
-		snprintf(filename, sizeof(filename), "%s/%02d.wav", waveFolder, b);
-		waves[b].saveWAV(filename, info, bank_len, wave_len);
 	}
 }
 

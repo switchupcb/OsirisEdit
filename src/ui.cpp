@@ -1,10 +1,10 @@
 #include "OsirisEdit.hpp"
 
 #ifdef ARCH_LIN
-	#include <linux/limits.h>
+#include <linux/limits.h>
 #endif
 #ifdef ARCH_MAC
-	#include <sys/syslimits.h>
+#include <sys/syslimits.h>
 #endif
 #include <libgen.h>
 
@@ -21,10 +21,13 @@
 
 #include "tablabels.hpp"
 #include <iostream>
-
+#include <dirent.h>
+#include <algorithm>
+#include <string>
+#include <vector>
 
 static bool showTestWindow = false;
-static bool showConvertPopup = false;
+static bool showConvertPopup = true;
 static ImTextureID logoTextureLight;
 static ImTextureID logoTextureDark;
 static ImTextureID logoTexture;
@@ -33,11 +36,10 @@ static int styleId = 0;
 int selectedId = 0;
 int lastSelectedId = 0;
 
-
 static void refreshStyle();
 
-
-enum Page {
+enum Page
+{
 	EDITOR_PAGE = 0,
 	EFFECT_PAGE,
 	GRID_PAGE,
@@ -49,8 +51,8 @@ enum Page {
 
 Page currentPage = EDITOR_PAGE;
 
-
-static ImVec4 lighten(ImVec4 col, float p) {
+static ImVec4 lighten(ImVec4 col, float p)
+{
 	col.x = crossf(col.x, 1.0, p);
 	col.y = crossf(col.y, 1.0, p);
 	col.z = crossf(col.z, 1.0, p);
@@ -58,7 +60,8 @@ static ImVec4 lighten(ImVec4 col, float p) {
 	return col;
 }
 
-static ImVec4 darken(ImVec4 col, float p) {
+static ImVec4 darken(ImVec4 col, float p)
+{
 	col.x = crossf(col.x, 0.0, p);
 	col.y = crossf(col.y, 0.0, p);
 	col.z = crossf(col.z, 0.0, p);
@@ -66,13 +69,40 @@ static ImVec4 darken(ImVec4 col, float p) {
 	return col;
 }
 
-static ImVec4 alpha(ImVec4 col, float a) {
+static ImVec4 alpha(ImVec4 col, float a)
+{
 	col.w *= a;
 	return col;
 }
 
+int createFolder(const char *path)
+{
+	char foldername[1024];
+	snprintf(foldername, sizeof(foldername), "%s", path);
+	std::string command = "mkdir ";
+	command += foldername;
+	return system(command.c_str());
+}
 
-static ImTextureID loadImage(const char *filename) {
+int removeFolder(const char *path)
+{
+	char foldername[1024];
+	snprintf(foldername, sizeof(foldername), "%s", path);
+#ifdef ARCH_LIN
+	std::string command = "rm -r ";
+	command += foldername;
+	return system(command.c_str());
+#endif
+#ifdef ARCH_WIN
+	std::string command = "rmdir /s /q ";
+	command += foldername;
+	return system(command.c_str());
+#endif
+	return 1;
+}
+
+static ImTextureID loadImage(const char *filename)
+{
 	GLuint textureId;
 	glGenTextures(1, &textureId);
 	glBindTexture(GL_TEXTURE_2D, textureId);
@@ -84,20 +114,20 @@ static ImTextureID loadImage(const char *filename) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	return (void*)(intptr_t) textureId;
+	return (void *)(intptr_t)textureId;
 }
 
-
-static void getImageSize(ImTextureID id, int *width, int *height) {
-	GLuint textureId = (GLuint)(intptr_t) id;
+static void getImageSize(ImTextureID id, int *width, int *height)
+{
+	GLuint textureId = (GLuint)(intptr_t)id;
 	glBindTexture(GL_TEXTURE_2D, textureId);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, width);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, height);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-
-static void selectWave(int waveId) {
+static void selectWave(int waveId)
+{
 	selectedId = waveId;
 	lastSelectedId = selectedId;
 	morphX = (float)(selectedId % BANK_GRID_WIDTH);
@@ -105,9 +135,10 @@ static void selectWave(int waveId) {
 	morphZ = (float)selectedId;
 }
 
-
-static void refreshMorphSnap() {
-	if (!morphInterpolate && morphZSpeed <= 0.f) {
+static void refreshMorphSnap()
+{
+	if (!morphInterpolate && morphZSpeed <= 0.f)
+	{
 		morphX = roundf(morphX);
 		morphY = roundf(morphY);
 		morphZ = roundf(morphZ);
@@ -115,27 +146,32 @@ static void refreshMorphSnap() {
 }
 
 /** Focuses to a page which displays the current bank, useful when loading a new bank and showing the user some visual feedback that the bank has changed. */
-static void showCurrentBankPage() {
-	switch (currentPage) {
-		case EFFECT_PAGE:
-		case IMPORT_PAGE:
-		case DB_PAGE:
-			currentPage = EDITOR_PAGE;
-			break;
-		default:
-			break;
+static void showCurrentBankPage()
+{
+	switch (currentPage)
+	{
+	case EFFECT_PAGE:
+	case IMPORT_PAGE:
+	case DB_PAGE:
+		currentPage = EDITOR_PAGE;
+		break;
+	default:
+		break;
 	}
 }
 
-static void menuManual() {
+static void menuManual()
+{
 	openBrowser("manual.pdf");
 }
 
-static void menuWebsite() {
+static void menuWebsite()
+{
 	openBrowser("http://synthtech.com/waveedit");
 }
 
-static void menuNewBank() {
+static void menuNewBank()
+{
 	showCurrentBankPage();
 	currentBank.clear();
 	lastFilename[0] = '\0';
@@ -143,11 +179,14 @@ static void menuNewBank() {
 }
 
 /** Caller must free() return value, guaranteed to not be NULL */
-static char *getLastDir() {
-	if (lastFilename[0] == '\0') {
+static char *getLastDir()
+{
+	if (lastFilename[0] == '\0')
+	{
 		return strdup(".");
 	}
-	else {
+	else
+	{
 		char filename[PATH_MAX];
 		strncpy(filename, lastFilename, sizeof(filename));
 		char *dir = dirname(filename);
@@ -155,10 +194,12 @@ static char *getLastDir() {
 	}
 }
 
-static void menuOpenBank() {
+static void menuOpenBank()
+{
 	char *dir = getLastDir();
 	char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
-	if (path) {
+	if (path)
+	{
 		showCurrentBankPage();
 		currentBank.loadWAV(path);
 		snprintf(lastFilename, sizeof(lastFilename), "%s", path);
@@ -168,10 +209,12 @@ static void menuOpenBank() {
 	free(dir);
 }
 
-static void menuSaveBankAs() {
+static void menuSaveBankAs()
+{
 	char *dir = getLastDir();
 	char *path = osdialog_file(OSDIALOG_SAVE, dir, "Untitled.wav", NULL);
-	if (path) {
+	if (path)
+	{
 		currentBank.saveWAV(path);
 		snprintf(lastFilename, sizeof(lastFilename), "%s", path);
 		free(path);
@@ -179,78 +222,92 @@ static void menuSaveBankAs() {
 	free(dir);
 }
 
-static void menuSaveBank() {
+static void menuSaveBank()
+{
 	if (lastFilename[0] != '\0')
 		currentBank.saveWAV(lastFilename);
 	else
 		menuSaveBankAs();
 }
 
-static void menuSaveWaves() {
+static void menuSaveWaves()
+{
 	char *dir = getLastDir();
 	char *path = osdialog_file(OSDIALOG_OPEN_DIR, dir, NULL, NULL);
-	if (path) {
+	if (path)
+	{
 		currentBank.saveWaves(path);
 		free(path);
 	}
 	free(dir);
 }
 
-
-
-static void menuConvert() {
+static void menuConvert()
+{
 	showConvertPopup = true;
 }
 
-static void menuQuit() {
+static void menuQuit()
+{
 	SDL_Event event;
 	event.type = SDL_QUIT;
 	SDL_PushEvent(&event);
 }
 
-static void menuSelectAll() {
+static void menuSelectAll()
+{
 	selectedId = 0;
-	lastSelectedId = BANK_LEN-1;
+	lastSelectedId = BANK_LEN - 1;
 }
 
-static void menuCopy() {
+static void menuCopy()
+{
 	currentBank.waves[selectedId].clipboardCopy();
 }
 
-static void menuCut() {
+static void menuCut()
+{
 	currentBank.waves[selectedId].clipboardCopy();
 	currentBank.waves[selectedId].clear();
 	historyPush();
 }
 
-static void menuPaste() {
+static void menuPaste()
+{
 	currentBank.waves[selectedId].clipboardPaste();
 	historyPush();
 }
 
-static void menuClear() {
-	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
+static void menuClear()
+{
+	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++)
+	{
 		currentBank.waves[i].clear();
 	}
 	historyPush();
 }
 
-static void menuRandomize() {
-	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
+static void menuRandomize()
+{
+	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++)
+	{
 		currentBank.waves[i].randomizeEffects();
 	}
 	historyPush();
 }
 
-static void incrementSelectedId(int delta) {
-	selectWave(clampi(selectedId + delta, 0, BANK_LEN-1));
+static void incrementSelectedId(int delta)
+{
+	selectWave(clampi(selectedId + delta, 0, BANK_LEN - 1));
 }
 
-static void menuKeyCommands() {
+static void menuKeyCommands()
+{
 	ImGuiContext &g = *GImGui;
 	ImGuiIO &io = ImGui::GetIO();
 
-	if (io.OSXBehaviors ? io.KeySuper : io.KeyCtrl) {
+	if (io.OSXBehaviors ? io.KeySuper : io.KeyCtrl)
+	{
 		if (ImGui::IsKeyPressed(SDLK_n) && !io.KeyShift && !io.KeyAlt)
 			menuNewBank();
 		if (ImGui::IsKeyPressed(SDLK_o) && !io.KeyShift && !io.KeyAlt)
@@ -279,9 +336,11 @@ static void menuKeyCommands() {
 	if (ImGui::IsKeyPressed(SDL_SCANCODE_F1))
 		menuManual();
 
-	if (!io.KeySuper && !io.KeyCtrl && !io.KeyShift && !io.KeyAlt) {
+	if (!io.KeySuper && !io.KeyCtrl && !io.KeyShift && !io.KeyAlt)
+	{
 		// Only trigger these key commands if no text box is focused
-		if (!g.ActiveId || g.ActiveId != GImGui->InputTextState.Id) {
+		if (!g.ActiveId || g.ActiveId != GImGui->InputTextState.Id)
+		{
 			if (ImGui::IsKeyPressed(SDLK_r))
 				menuRandomize();
 			if (ImGui::IsKeyPressed(io.OSXBehaviors ? SDLK_BACKSPACE : SDLK_DELETE))
@@ -313,7 +372,8 @@ static void menuKeyCommands() {
 	}
 }
 
-void renderWaveMenu() {
+void renderWaveMenu()
+{
 	char menuName[128];
 	int selectedStart = mini(selectedId, lastSelectedId);
 	int selectedEnd = maxi(selectedId, lastSelectedId);
@@ -323,33 +383,41 @@ void renderWaveMenu() {
 		snprintf(menuName, sizeof(menuName), "(Wave %d)", selectedId);
 	ImGui::MenuItem(menuName, NULL, false, false);
 
-	if (ImGui::MenuItem("Clear", "Delete")) {
+	if (ImGui::MenuItem("Clear", "Delete"))
+	{
 		menuClear();
 	}
-	if (ImGui::MenuItem("Randomize Effects", "R")) {
+	if (ImGui::MenuItem("Randomize Effects", "R"))
+	{
 		menuRandomize();
 	}
 
-	if (selectedStart != selectedEnd) {
+	if (selectedStart != selectedEnd)
+	{
 		ImGui::MenuItem("##spacer3", NULL, false, false);
 		snprintf(menuName, sizeof(menuName), "(Wave %d)", selectedId);
 		ImGui::MenuItem(menuName, NULL, false, false);
 	}
 
-	if (ImGui::MenuItem("Copy", ImGui::GetIO().OSXBehaviors ? "Cmd+C" : "Ctrl+C")) {
+	if (ImGui::MenuItem("Copy", ImGui::GetIO().OSXBehaviors ? "Cmd+C" : "Ctrl+C"))
+	{
 		menuCopy();
 	}
-	if (ImGui::MenuItem("Cut", ImGui::GetIO().OSXBehaviors ? "Cmd+X" : "Ctrl+X")) {
+	if (ImGui::MenuItem("Cut", ImGui::GetIO().OSXBehaviors ? "Cmd+X" : "Ctrl+X"))
+	{
 		menuCut();
 	}
-	if (ImGui::MenuItem("Paste", ImGui::GetIO().OSXBehaviors ? "Cmd+V" : "Ctrl+V", false, clipboardActive)) {
+	if (ImGui::MenuItem("Paste", ImGui::GetIO().OSXBehaviors ? "Cmd+V" : "Ctrl+V", false, clipboardActive))
+	{
 		menuPaste();
 	}
 
-	if (ImGui::MenuItem("Open Wave...")) {
+	if (ImGui::MenuItem("Open Wave..."))
+	{
 		char *dir = getLastDir();
 		char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
-		if (path) {
+		if (path)
+		{
 			currentBank.waves[selectedId].loadWAV(path);
 			historyPush();
 			snprintf(lastFilename, sizeof(lastFilename), "%s", path);
@@ -357,10 +425,12 @@ void renderWaveMenu() {
 		}
 		free(dir);
 	}
-	if (ImGui::MenuItem("Save Wave As...")) {
+	if (ImGui::MenuItem("Save Wave As..."))
+	{
 		char *dir = getLastDir();
 		char *path = osdialog_file(OSDIALOG_SAVE, dir, "Untitled.wav", NULL);
-		if (path) {
+		if (path)
+		{
 			currentBank.waves[selectedId].saveWAV(path);
 			snprintf(lastFilename, sizeof(lastFilename), "%s", path);
 			free(path);
@@ -369,7 +439,8 @@ void renderWaveMenu() {
 	}
 }
 
-void renderMenu() {
+void renderMenu()
+{
 	menuKeyCommands();
 
 	// HACK
@@ -382,7 +453,8 @@ void renderMenu() {
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, padding);
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		ImGui::SetNextWindowSize(ImVec2(width + 2 * padding.x, height + 2 * padding.y));
-		if (ImGui::Begin("Logo", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoInputs)) {
+		if (ImGui::Begin("Logo", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoInputs))
+		{
 			ImGui::Image(logoTexture, ImVec2(width, height));
 			ImGui::End();
 		}
@@ -391,13 +463,16 @@ void renderMenu() {
 	}
 
 	// Draw main menu
-	if (ImGui::BeginMenuBar()) {
+	if (ImGui::BeginMenuBar())
+	{
 		// This will be hidden by the window with the logo
-		if (ImGui::BeginMenu("                        v" TOSTRING(VERSION), false)) {
+		if (ImGui::BeginMenu("                        v" TOSTRING(VERSION), false))
+		{
 			ImGui::EndMenu();
 		}
 		// File
-		if (ImGui::BeginMenu("File")) {
+		if (ImGui::BeginMenu("File"))
+		{
 			if (ImGui::MenuItem("New Bank", ImGui::GetIO().OSXBehaviors ? "Cmd+N" : "Ctrl+N"))
 				menuNewBank();
 			if (ImGui::MenuItem("Open Bank...", ImGui::GetIO().OSXBehaviors ? "Cmd+O" : "Ctrl+O"))
@@ -416,7 +491,8 @@ void renderMenu() {
 			ImGui::EndMenu();
 		}
 		// Edit
-		if (ImGui::BeginMenu("Edit")) {
+		if (ImGui::BeginMenu("Edit"))
+		{
 			if (ImGui::MenuItem("Undo", ImGui::GetIO().OSXBehaviors ? "Cmd+Z" : "Ctrl+Z"))
 				historyUndo();
 			if (ImGui::MenuItem("Redo", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+Z" : "Ctrl+Shift+Z"))
@@ -428,36 +504,45 @@ void renderMenu() {
 			ImGui::EndMenu();
 		}
 		// Audio Output
-		if (ImGui::BeginMenu("Audio Output")) {
+		if (ImGui::BeginMenu("Audio Output"))
+		{
 			int deviceCount = audioGetDeviceCount();
-			for (int deviceId = 0; deviceId < deviceCount; deviceId++) {
+			for (int deviceId = 0; deviceId < deviceCount; deviceId++)
+			{
 				const char *deviceName = audioGetDeviceName(deviceId);
-				if (ImGui::MenuItem(deviceName, NULL, false)) audioOpen(deviceId);
+				if (ImGui::MenuItem(deviceName, NULL, false))
+					audioOpen(deviceId);
 			}
 			ImGui::EndMenu();
 		}
 		// Colors
-		if (ImGui::BeginMenu("Colors")) {
-			if (ImGui::MenuItem("Sol", NULL, styleId == 0)) {
+		if (ImGui::BeginMenu("Colors"))
+		{
+			if (ImGui::MenuItem("Sol", NULL, styleId == 0))
+			{
 				styleId = 0;
 				refreshStyle();
 			}
-			if (ImGui::MenuItem("Mars", NULL, styleId == 1)) {
+			if (ImGui::MenuItem("Mars", NULL, styleId == 1))
+			{
 				styleId = 1;
 				refreshStyle();
 			}
-			if (ImGui::MenuItem("Mercury", NULL, styleId == 2)) {
+			if (ImGui::MenuItem("Mercury", NULL, styleId == 2))
+			{
 				styleId = 2;
 				refreshStyle();
 			}
-			if (ImGui::MenuItem("Titan", NULL, styleId == 3)) {
+			if (ImGui::MenuItem("Titan", NULL, styleId == 3))
+			{
 				styleId = 3;
 				refreshStyle();
 			}
 			ImGui::EndMenu();
 		}
 		// Help
-		if (ImGui::BeginMenu("Help")) {
+		if (ImGui::BeginMenu("Help"))
+		{
 			if (ImGui::MenuItem("Manual PDF", "F1", false))
 				menuManual();
 			if (ImGui::MenuItem("Webpage", "", false))
@@ -469,20 +554,23 @@ void renderMenu() {
 	}
 }
 
-void renderPopup() {
-	if (showConvertPopup) {
+void renderPopup()
+{
+	if (showConvertPopup)
+	{
 		ImGui::OpenPopup("##convert");
 	}
 
 	ImGui::SetNextWindowContentWidth(800.0);
-	if (ImGui::BeginPopupModal("##convert", NULL)) {
+	if (ImGui::BeginPopupModal("##convert", NULL))
+	{
 		ImGui::PushItemWidth(-140.0);
 
 		// Header
 		ImGui::Text("Output");
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
-		
+
 		// Source Directory
 		static char sourceFilename[1024] = "";
 		ImGui::Text("Source:");
@@ -490,7 +578,8 @@ void renderPopup() {
 		ImGui::PushItemWidth(-70);
 		ImGui::InputText("", sourceFilename, sizeof(sourceFilename));
 		ImGui::SameLine();
-		if (ImGui::Button("Browse..")) {
+		if (ImGui::Button("Browse.."))
+		{
 			char *dir = getLastDir();
 			char *path = osdialog_file(OSDIALOG_OPEN_DIR, dir, NULL, NULL);
 			snprintf(sourceFilename, sizeof(sourceFilename), "%s", path);
@@ -507,46 +596,46 @@ void renderPopup() {
 		// Sample Rate
 		ImGui::Text("Sample Rate:");
 		ImGui::SameLine();
-		const char* sampleRates[] = {"8000", "11025", "16000", "22050", "32000", "44100", "48000", "88200", "96000"};
-		static int rate = 44100;
+		const char *sampleRates[] = {"8000", "11025", "16000", "22050", "32000", "44100", "48000", "88200", "96000"};
+		static int rate = 5;
 		ImGui::PushItemWidth(-1);
 		ImGui::Combo("##rate", &rate, sampleRates, IM_ARRAYSIZE(sampleRates));
 
 		// WAV Bit Depth
 		ImGui::Text("Bit Depth:  ");
 		ImGui::SameLine();
-		const char* bitDepths[] = {"8", "16", "32"};
-		static int depth = 16;
+		const char *bitDepths[] = {"8", "16", "32"};
+		static int depth = 1;
 		ImGui::Combo("##depth", &depth, bitDepths, IM_ARRAYSIZE(bitDepths));
 
 		// Wave Bank Length (Width * Height)
-		const char* bankSizes[] = { "16", "32", "64" };
-		static int height = 32;
-		static int width = 32;
+		const char *bankSizesH[] = {"16", "32", "64"};
+		const char *bankSizesW[] = {"16", "32", "64"};
+		static int height = 0;
+		static int width = 0;
 
-		ImGui::Dummy(ImVec2(0.0f, 5.0f));
-		ImGui::Text("Bank Length (Max 2048): %d", std::min(width * height, 2048));
-		ImGui::Dummy(ImVec2(0.0f, 5.0f));
-
-		ImGui::Text("Bank Width: ");
+		ImGui::Text("Bank Length:");
 		ImGui::SameLine();
-		ImGui::Combo("##width", &width, bankWidths, IM_ARRAYSIZE(bankSizes));
+		ImGui::Combo("##width", &width, bankSizesH, IM_ARRAYSIZE(bankSizesH));
 
-		ImGui::Text("Bank Height:");
-		ImGui::SameLine();
-		ImGui::Combo("##width", &height, bankWidths, IM_ARRAYSIZE(bankSizes));
+		// ImGui::Text("Bank Height:");
+		// ImGui::SameLine();
+		// ImGui::Combo("##height", &height, bankSizesW, IM_ARRAYSIZE(bankSizesW));
+
+		// ImGui::Dummy(ImVec2(0.0f, 5.0f));
+		// ImGui::Text("Bank Length (Max 2048): %d", std::min(width * height, 2048));
+		// ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
 		// Wave Length
-		const char* waveLengths[] = {"8", "16", "32", "64", "128", "256", "512", "1028", "2048"};
+		const char *waveLengths[] = {"8", "16", "32", "64", "128", "256", "512", "1028", "2048"};
 		static int wavelength = 256;
 		ImGui::Text("Wave Length:");
 		ImGui::SameLine();
 		ImGui::Combo("##wavelength", &wavelength, waveLengths, IM_ARRAYSIZE(waveLengths));
 
 		// Destination Header
-		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
-		ImGui::Text("Destination");
+		ImGui::Text("DESTINATION");
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
@@ -557,39 +646,110 @@ void renderPopup() {
 		ImGui::PushItemWidth(-70);
 		ImGui::InputText("", convertFilename, sizeof(convertFilename));
 		ImGui::SameLine();
-		if (ImGui::Button("Browse..")) {
-			char* dir = getLastDir();
-			char* path = osdialog_file(OSDIALOG_OPEN_DIR, dir, NULL, NULL);
+		if (ImGui::Button("Browse..##123"))
+		{
+			char *dir = getLastDir();
+			char *path = osdialog_file(OSDIALOG_OPEN_DIR, dir, NULL, NULL);
 			snprintf(convertFilename, sizeof(convertFilename), "%s", path);
 			free(path);
 			free(dir);
 		}
 
+		ImGui::Dummy(ImVec2(0.0f, 5.0f));
+		ImGui::Text("CREATE BANKS");
+		ImGui::Separator();
+		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 		// Selected Banks
 		/// Banks A, B, C, D are selectable.
-		ImGui::Dummy(ImVec2(0.0f, 15.0f));
+		static bool bankA, bankB, bankC, bankD;
+		ImGui::Text("A");
+		ImGui::SameLine();
+		ImGui::Checkbox("##A", &bankA);
+		ImGui::SameLine();
+		ImGui::Text("B");
+		ImGui::SameLine();
+		ImGui::Checkbox("##B", &bankB);
+		ImGui::SameLine();
+		ImGui::Text("C");
+		ImGui::SameLine();
+		ImGui::Checkbox("##C", &bankC);
+		ImGui::SameLine();
+		ImGui::Text("D");
+		ImGui::SameLine();
+		ImGui::Checkbox("##D", &bankD);
+		ImGui::Dummy(ImVec2(0.0f, 5.0f));
+		ImGui::Separator();
+		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
-
-		bool error = depth < 0 || rate < 0 || wavelength < 0;
-		if (error) {
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(ImColor(255,0,0)));
+		bool error = depth < 0 || rate < 0 || wavelength < 0 || (!bankA && !bankB && !bankC && !bankD);
+		if (error)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(ImColor(255, 0, 0)));
 			ImGui::Text("Must select bit depth, sample rate, wavelength, and a valid directory");
 			ImGui::PopStyleColor();
 		}
-		if (ImGui::Button("Convert")) {
-			if (!error) {
+		if (ImGui::Button("Convert"))
+		{
+			if (!error)
+			{
+				// Save Info
 				long bitData[] = {SF_FORMAT_PCM_S8, SF_FORMAT_PCM_16, SF_FORMAT_PCM_32};
 				SF_INFO info;
 				info.samplerate = atoi(sampleRates[rate]);
 				info.channels = 1;
 				info.format = SF_FORMAT_WAV | bitData[depth] | SF_ENDIAN_LITTLE;
-				currentBank.saveWaves(convertFilename, info, std::min(width * height, 2048), atoi(waveLengths[wavelength]));
+
+				// Make folders
+				std::string osirisFolder = convertFilename;
+				osirisFolder += "/osiris";
+				if (createFolder(osirisFolder.c_str()) != 0)
+				{
+					removeFolder(osirisFolder.c_str());
+					createFolder(osirisFolder.c_str());
+				}
+
+				// ASDF
+				Bank exportBank;
+				std::vector<std::string> files;
+				DIR *dir;
+				dir = opendir(sourceFilename);
+				if (dir == NULL)
+				{
+					ImGui::EndPopup();
+					return;
+				}
+				struct dirent *ent;
+				while ((ent = readdir(dir)) != NULL)
+					files.push_back(ent->d_name);
+				closedir(dir);
+				files.erase(std::find(files.begin(), files.end(), "."));
+				files.erase(std::find(files.begin(), files.end(), ".."));
+				std::sort(files.begin(), files.end());
+
+				bool boolArr[] = {bankA, bankB, bankC, bankD};
+				for (int j = 0; j < 4; j++)
+				{
+					if (boolArr[j])
+					{
+						std::string osirisExportFolder = convertFilename;
+						char letter = 'A' + j;
+						osirisExportFolder += "/osiris/" + std::string(1, letter);
+						std::cout << osirisExportFolder << std::endl;
+						createFolder(osirisExportFolder.c_str());
+						for (auto i = files.begin(); i != files.end(); i++)
+						{
+							exportBank.loadWAV(i->c_str());
+							exportBank.saveWAV((osirisExportFolder + "/" + *i).c_str(), info, atoi(bankSizesH[height]), atoi(waveLengths[wavelength]));
+						}
+					}
+				}
 				ImGui::CloseCurrentPopup();
 				showConvertPopup = false;
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Cancel")) {
+		if (ImGui::Button("Cancel"))
+		{
 			ImGui::CloseCurrentPopup();
 			showConvertPopup = false;
 		}
@@ -597,14 +757,17 @@ void renderPopup() {
 	}
 }
 
-static void convertPopup() {
-	if (showConvertPopup) {
+static void convertPopup()
+{
+	if (showConvertPopup)
+	{
 		showConvertPopup = false;
 		ImGui::OpenPopup("Convert");
 	}
 
 	ImGui::SetNextWindowContentWidth(400.0);
-	if (ImGui::BeginPopupModal("Convert", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
+	if (ImGui::BeginPopupModal("Convert", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+	{
 		ImGui::PushItemWidth(-140.0);
 		//ImGui::InputText("Title (required)", title, sizeof(title));
 		//ImGui::InputText("Author (required)", attribution, sizeof(attribution));
@@ -613,14 +776,17 @@ static void convertPopup() {
 		/*ImGui::TextWrapped("%s", "By sharing the currently loaded wavetable bank to WaveEdit Online, you agree to release this work under the CC0 public domain license.");
 		*/
 
-		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+		if (ImGui::Button("Cancel"))
+			ImGui::CloseCurrentPopup();
 
 		ImGui::SameLine();
-		bool convertable = true/*(strlen(title) > 0 && strlen(attribution) > 0)*/;
+		bool convertable = true /*(strlen(title) > 0 && strlen(attribution) > 0)*/;
 		if (!convertable)
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
-		if (ImGui::Button("Convert")) {
-			if (convertable) {
+		if (ImGui::Button("Convert"))
+		{
+			if (convertable)
+			{
 				// Convert the file to osiris.
 				ImGui::CloseCurrentPopup();
 			}
@@ -631,7 +797,8 @@ static void convertPopup() {
 	}
 }
 
-void renderPreview() {
+void renderPreview()
+{
 	ImGui::Checkbox("Play", &playEnabled);
 	ImGui::SameLine();
 	ImGui::PushItemWidth(300.0);
@@ -641,7 +808,8 @@ void renderPreview() {
 	ImGui::SliderFloat("##playFrequency", &playFrequency, 1.0f, 10000.0f, "Frequency: %.2f Hz", 0.0f);
 
 	ImGui::Checkbox("Morph Interpolate", &morphInterpolate);
-	if (playModeXY) {
+	if (playModeXY)
+	{
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-1.0);
 		float width = ImGui::CalcItemWidth() / 2.0 - ImGui::GetStyle().FramePadding.y;
@@ -650,7 +818,8 @@ void renderPreview() {
 		ImGui::SameLine();
 		ImGui::SliderFloat("##Morph Y", &morphY, 0.0, BANK_GRID_HEIGHT - 1, "Morph Y: %.3f");
 	}
-	else {
+	else
+	{
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-1.0);
 		float width = ImGui::CalcItemWidth() / 2.0 - ImGui::GetStyle().FramePadding.y;
@@ -663,33 +832,39 @@ void renderPreview() {
 	refreshMorphSnap();
 }
 
-
-void renderToolSelector(Tool *tool) {
-	if (ImGui::RadioButton("Pencil", *tool == PENCIL_TOOL)) *tool = PENCIL_TOOL;
+void renderToolSelector(Tool *tool)
+{
+	if (ImGui::RadioButton("Pencil", *tool == PENCIL_TOOL))
+		*tool = PENCIL_TOOL;
 	ImGui::SameLine();
-	if (ImGui::RadioButton("Brush", *tool == BRUSH_TOOL)) *tool = BRUSH_TOOL;
+	if (ImGui::RadioButton("Brush", *tool == BRUSH_TOOL))
+		*tool = BRUSH_TOOL;
 	ImGui::SameLine();
-	if (ImGui::RadioButton("Grab", *tool == GRAB_TOOL)) *tool = GRAB_TOOL;
+	if (ImGui::RadioButton("Grab", *tool == GRAB_TOOL))
+		*tool = GRAB_TOOL;
 	ImGui::SameLine();
-	if (ImGui::RadioButton("Line", *tool == LINE_TOOL)) *tool = LINE_TOOL;
+	if (ImGui::RadioButton("Line", *tool == LINE_TOOL))
+		*tool = LINE_TOOL;
 	ImGui::SameLine();
-	if (ImGui::RadioButton("Eraser", *tool == ERASER_TOOL)) *tool = ERASER_TOOL;
+	if (ImGui::RadioButton("Eraser", *tool == ERASER_TOOL))
+		*tool = ERASER_TOOL;
 }
 
-
-void effectSlider(EffectID effect) {
+void effectSlider(EffectID effect)
+{
 	char id[64];
 	snprintf(id, sizeof(id), "##%s", effectNames[effect]);
 	char text[64];
 	snprintf(text, sizeof(text), "%s: %%.3f", effectNames[effect]);
-	if (ImGui::SliderFloat(id, &currentBank.waves[selectedId].effects[effect], 0.0f, 1.0f, text)) {
+	if (ImGui::SliderFloat(id, &currentBank.waves[selectedId].effects[effect], 0.0f, 1.0f, text))
+	{
 		currentBank.waves[selectedId].updatePost();
 		historyPush();
 	}
 }
 
-
-void editorPage() {
+void editorPage()
+{
 	ImGui::BeginChild("Sidebar", ImVec2(200, 0), true);
 	{
 		float dummyZ = 0.0;
@@ -711,18 +886,23 @@ void editorPage() {
 		renderToolSelector(&tool);
 
 		ImGui::SameLine();
-		if (ImGui::Button("Clear")) {
+		if (ImGui::Button("Clear"))
+		{
 			currentBank.waves[selectedId].clear();
 			historyPush();
 		}
 
-
-		for (const CatalogCategory &catalogCategory : catalogCategories) {
+		for (const CatalogCategory &catalogCategory : catalogCategories)
+		{
 			ImGui::SameLine();
-			if (ImGui::Button(catalogCategory.name.c_str())) ImGui::OpenPopup(catalogCategory.name.c_str());
-			if (ImGui::BeginPopup(catalogCategory.name.c_str())) {
-				for (const CatalogFile &catalogFile : catalogCategory.files) {
-					if (ImGui::Selectable(catalogFile.name.c_str())) {
+			if (ImGui::Button(catalogCategory.name.c_str()))
+				ImGui::OpenPopup(catalogCategory.name.c_str());
+			if (ImGui::BeginPopup(catalogCategory.name.c_str()))
+			{
+				for (const CatalogFile &catalogFile : catalogCategory.files)
+				{
+					if (ImGui::Selectable(catalogFile.name.c_str()))
+					{
 						memcpy(currentBank.waves[selectedId].samples, catalogFile.samples, sizeof(float) * WAVE_LEN);
 						currentBank.waves[selectedId].commitSamples();
 						historyPush();
@@ -739,43 +919,51 @@ void editorPage() {
 		const int oversample = 4;
 		float waveOversample[WAVE_LEN * oversample];
 		cyclicOversample(wave->postSamples, waveOversample, WAVE_LEN, oversample);
-		if (renderWave("WaveEditor", 200.0, wave->samples, WAVE_LEN, waveOversample, WAVE_LEN * oversample, tool)) {
+		if (renderWave("WaveEditor", 200.0, wave->samples, WAVE_LEN, waveOversample, WAVE_LEN * oversample, tool))
+		{
 			currentBank.waves[selectedId].commitSamples();
 			historyPush();
 		}
 
 		ImGui::Text("Harmonics");
-		if (renderHistogram("HarmonicEditor", 200.0, wave->harmonics, WAVE_LEN / 2, wave->postHarmonics, WAVE_LEN / 2, tool)) {
+		if (renderHistogram("HarmonicEditor", 200.0, wave->harmonics, WAVE_LEN / 2, wave->postHarmonics, WAVE_LEN / 2, tool))
+		{
 			currentBank.waves[selectedId].commitHarmonics();
 			historyPush();
 		}
 
 		ImGui::Text("Effects");
-		for (int i = 0; i < EFFECTS_LEN; i++) {
-			effectSlider((EffectID) i);
+		for (int i = 0; i < EFFECTS_LEN; i++)
+		{
+			effectSlider((EffectID)i);
 		}
 
-		if (ImGui::Checkbox("Cycle", &currentBank.waves[selectedId].cycle)) {
+		if (ImGui::Checkbox("Cycle", &currentBank.waves[selectedId].cycle))
+		{
 			currentBank.waves[selectedId].updatePost();
 			historyPush();
 		}
 		ImGui::SameLine();
-		if (ImGui::Checkbox("Normalize", &currentBank.waves[selectedId].normalize)) {
+		if (ImGui::Checkbox("Normalize", &currentBank.waves[selectedId].normalize))
+		{
 			currentBank.waves[selectedId].updatePost();
 			historyPush();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Randomize")) {
+		if (ImGui::Button("Randomize"))
+		{
 			currentBank.waves[selectedId].randomizeEffects();
 			historyPush();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Reset")) {
+		if (ImGui::Button("Reset"))
+		{
 			currentBank.waves[selectedId].clearEffects();
 			historyPush();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Bake")) {
+		if (ImGui::Button("Bake"))
+		{
 			currentBank.waves[selectedId].bakeEffects();
 			historyPush();
 		}
@@ -785,11 +973,12 @@ void editorPage() {
 	ImGui::EndChild();
 }
 
-
-void effectHistogram(EffectID effect, Tool tool) {
+void effectHistogram(EffectID effect, Tool tool)
+{
 	float value[BANK_LEN];
 	float average = 0.0;
-	for (int i = 0; i < BANK_LEN; i++) {
+	for (int i = 0; i < BANK_LEN; i++)
+	{
 		value[i] = currentBank.waves[i].effects[effect];
 		average += value[i];
 	}
@@ -802,14 +991,18 @@ void effectHistogram(EffectID effect, Tool tool) {
 	snprintf(id, sizeof(id), "##%sAverage", effectNames[effect]);
 	char text[64];
 	snprintf(text, sizeof(text), "Average %s: %%.3f", effectNames[effect]);
-	if (ImGui::SliderFloat(id, &average, 0.0f, 1.0f, text)) {
+	if (ImGui::SliderFloat(id, &average, 0.0f, 1.0f, text))
+	{
 		// Change the average effect level to the new average
 		float deltaAverage = average - oldAverage;
-		for (int i = 0; i < BANK_LEN; i++) {
-			if (0.0 < average && average < 1.0) {
+		for (int i = 0; i < BANK_LEN; i++)
+		{
+			if (0.0 < average && average < 1.0)
+			{
 				currentBank.waves[i].effects[effect] = clampf(currentBank.waves[i].effects[effect] + deltaAverage, 0.0, 1.0);
 			}
-			else {
+			else
+			{
 				currentBank.waves[i].effects[effect] = average;
 			}
 			currentBank.waves[i].updatePost();
@@ -817,9 +1010,12 @@ void effectHistogram(EffectID effect, Tool tool) {
 		}
 	}
 
-	if (renderHistogram(effectNames[effect], 120, value, BANK_LEN, NULL, 0, tool)) {
-		for (int i = 0; i < BANK_LEN; i++) {
-			if (currentBank.waves[i].effects[effect] != value[i]) {
+	if (renderHistogram(effectNames[effect], 120, value, BANK_LEN, NULL, 0, tool))
+	{
+		for (int i = 0; i < BANK_LEN; i++)
+		{
+			if (currentBank.waves[i].effects[effect] != value[i])
+			{
 				// TODO This always selects the highest index. Select the index the mouse is hovering (requires renderHistogram() to return an int)
 				selectWave(i);
 				currentBank.waves[i].effects[effect] = value[i];
@@ -830,66 +1026,82 @@ void effectHistogram(EffectID effect, Tool tool) {
 	}
 }
 
-
-void effectPage() {
-	ImGui::BeginChild("Effect Editor", ImVec2(0, 0), true); {
+void effectPage()
+{
+	ImGui::BeginChild("Effect Editor", ImVec2(0, 0), true);
+	{
 		static Tool tool = PENCIL_TOOL;
 		renderToolSelector(&tool);
 
 		ImGui::PushItemWidth(-1);
-		for (int i = 0; i < EFFECTS_LEN; i++) {
-			effectHistogram((EffectID) i, tool);
+		for (int i = 0; i < EFFECTS_LEN; i++)
+		{
+			effectHistogram((EffectID)i, tool);
 		}
 		ImGui::PopItemWidth();
 
-		if (ImGui::Button("Cycle All")) {
-			for (int i = 0; i < BANK_LEN; i++) {
+		if (ImGui::Button("Cycle All"))
+		{
+			for (int i = 0; i < BANK_LEN; i++)
+			{
 				currentBank.waves[i].cycle = true;
 				currentBank.waves[i].updatePost();
 				historyPush();
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Cycle None")) {
-			for (int i = 0; i < BANK_LEN; i++) {
+		if (ImGui::Button("Cycle None"))
+		{
+			for (int i = 0; i < BANK_LEN; i++)
+			{
 				currentBank.waves[i].cycle = false;
 				currentBank.waves[i].updatePost();
 				historyPush();
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Normalize All")) {
-			for (int i = 0; i < BANK_LEN; i++) {
+		if (ImGui::Button("Normalize All"))
+		{
+			for (int i = 0; i < BANK_LEN; i++)
+			{
 				currentBank.waves[i].normalize = true;
 				currentBank.waves[i].updatePost();
 				historyPush();
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Normalize None")) {
-			for (int i = 0; i < BANK_LEN; i++) {
+		if (ImGui::Button("Normalize None"))
+		{
+			for (int i = 0; i < BANK_LEN; i++)
+			{
 				currentBank.waves[i].normalize = false;
 				currentBank.waves[i].updatePost();
 				historyPush();
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Randomize")) {
-			for (int i = 0; i < BANK_LEN; i++) {
+		if (ImGui::Button("Randomize"))
+		{
+			for (int i = 0; i < BANK_LEN; i++)
+			{
 				currentBank.waves[i].randomizeEffects();
 				historyPush();
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Reset")) {
-			for (int i = 0; i < BANK_LEN; i++) {
+		if (ImGui::Button("Reset"))
+		{
+			for (int i = 0; i < BANK_LEN; i++)
+			{
 				currentBank.waves[i].clearEffects();
 				historyPush();
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Bake")) {
-			for (int i = 0; i < BANK_LEN; i++) {
+		if (ImGui::Button("Bake"))
+		{
+			for (int i = 0; i < BANK_LEN; i++)
+			{
 				currentBank.waves[i].bakeEffects();
 				historyPush();
 			}
@@ -898,8 +1110,8 @@ void effectPage() {
 	ImGui::EndChild();
 }
 
-
-void gridPage() {
+void gridPage()
+{
 	playModeXY = true;
 	ImGui::BeginChild("Grid Page", ImVec2(0, 0), true);
 	{
@@ -910,8 +1122,8 @@ void gridPage() {
 	ImGui::EndChild();
 }
 
-
-void waterfallPage() {
+void waterfallPage()
+{
 	ImGui::BeginChild("3D View", ImVec2(0, 0), true);
 	{
 		ImGui::PushItemWidth(-1.0);
@@ -925,8 +1137,8 @@ void waterfallPage() {
 	ImGui::EndChild();
 }
 
-
-void renderMain() {
+void renderMain()
+{
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2((int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y));
 
@@ -944,38 +1156,52 @@ void renderMain() {
 				"Grid XY View",
 				"Waterfall View",
 				"Import",
-				"WaveEdit Online"
-			};
+				"WaveEdit Online"};
 			static int hoveredTab = 0;
-			ImGui::TabLabels(NUM_PAGES, tabLabels, (int*)&currentPage, NULL, false, &hoveredTab);
+			ImGui::TabLabels(NUM_PAGES, tabLabels, (int *)&currentPage, NULL, false, &hoveredTab);
 		}
 
 		// Page
 		// Reset some audio variables. These might be changed within the pages.
 		playModeXY = false;
 		playingBank = &currentBank;
-		switch (currentPage) {
-		case EDITOR_PAGE: editorPage(); break;
-		case EFFECT_PAGE: effectPage(); break;
-		case GRID_PAGE: gridPage(); break;
-		case WATERFALL_PAGE: waterfallPage(); break;
-		case IMPORT_PAGE: importPage(); break;
-		case DB_PAGE: dbPage(); break;
-		default: break;
+		switch (currentPage)
+		{
+		case EDITOR_PAGE:
+			editorPage();
+			break;
+		case EFFECT_PAGE:
+			effectPage();
+			break;
+		case GRID_PAGE:
+			gridPage();
+			break;
+		case WATERFALL_PAGE:
+			waterfallPage();
+			break;
+		case IMPORT_PAGE:
+			importPage();
+			break;
+		case DB_PAGE:
+			dbPage();
+			break;
+		default:
+			break;
 		}
 	}
 	ImGui::End();
 
-	if (showTestWindow) {
+	if (showTestWindow)
+	{
 		ImGui::ShowTestWindow(&showTestWindow);
 	}
 }
 
-
-static void refreshStyle() {
+static void refreshStyle()
+{
 	const ImVec4 transparent = ImVec4(0.0, 0.0, 0.0, 0.0);
 
-	ImGuiStyle& style = ImGui::GetStyle();
+	ImGuiStyle &style = ImGui::GetStyle();
 
 	style.Alpha = 1.f;
 	style.WindowRounding = 2.f;
@@ -985,53 +1211,55 @@ static void refreshStyle() {
 	style.FrameRounding = 2.f;
 	style.FramePadding = ImVec2(6.0f, 4.0f);
 
-	if (styleId == 0) {
-		style.Colors[ImGuiCol_Text]                  = ImVec4(0.73f, 0.73f, 0.73f, 1.00f);
-		style.Colors[ImGuiCol_TextDisabled]          = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-		style.Colors[ImGuiCol_WindowBg]              = ImVec4(0.26f, 0.26f, 0.26f, 0.95f);
-		style.Colors[ImGuiCol_ChildWindowBg]         = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
-		style.Colors[ImGuiCol_PopupBg]               = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
-		style.Colors[ImGuiCol_Border]                = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
-		style.Colors[ImGuiCol_BorderShadow]          = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
-		style.Colors[ImGuiCol_FrameBg]               = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
-		style.Colors[ImGuiCol_FrameBgHovered]        = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
-		style.Colors[ImGuiCol_FrameBgActive]         = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
-		style.Colors[ImGuiCol_TitleBg]               = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_TitleBgCollapsed]      = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_TitleBgActive]         = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_MenuBarBg]             = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
-		style.Colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.21f, 0.21f, 0.21f, 1.00f);
-		style.Colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_ScrollbarGrabActive]   = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_ComboBg]               = ImVec4(0.32f, 0.32f, 0.32f, 1.00f);
-		style.Colors[ImGuiCol_CheckMark]             = ImVec4(0.78f, 0.78f, 0.78f, 1.00f);
-		style.Colors[ImGuiCol_SliderGrab]            = ImVec4(0.74f, 0.74f, 0.74f, 1.00f);
-		style.Colors[ImGuiCol_SliderGrabActive]      = ImVec4(0.74f, 0.74f, 0.74f, 1.00f);
-		style.Colors[ImGuiCol_Button]                = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_ButtonHovered]         = ImVec4(0.43f, 0.43f, 0.43f, 1.00f);
-		style.Colors[ImGuiCol_ButtonActive]          = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
-		style.Colors[ImGuiCol_Header]                = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_HeaderHovered]         = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_HeaderActive]          = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+	if (styleId == 0)
+	{
+		style.Colors[ImGuiCol_Text] = ImVec4(0.73f, 0.73f, 0.73f, 1.00f);
+		style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+		style.Colors[ImGuiCol_WindowBg] = ImVec4(0.26f, 0.26f, 0.26f, 0.95f);
+		style.Colors[ImGuiCol_ChildWindowBg] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+		style.Colors[ImGuiCol_PopupBg] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+		style.Colors[ImGuiCol_Border] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+		style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
+		style.Colors[ImGuiCol_FrameBg] = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
+		style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
+		style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
+		style.Colors[ImGuiCol_TitleBg] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+		style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.21f, 0.21f, 0.21f, 1.00f);
+		style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_ComboBg] = ImVec4(0.32f, 0.32f, 0.32f, 1.00f);
+		style.Colors[ImGuiCol_CheckMark] = ImVec4(0.78f, 0.78f, 0.78f, 1.00f);
+		style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.74f, 0.74f, 0.74f, 1.00f);
+		style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.74f, 0.74f, 0.74f, 1.00f);
+		style.Colors[ImGuiCol_Button] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.43f, 0.43f, 0.43f, 1.00f);
+		style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
+		style.Colors[ImGuiCol_Header] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
 		// style.Colors[ImGuiCol_Column]                = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
 		// style.Colors[ImGuiCol_ColumnHovered]         = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
 		// style.Colors[ImGuiCol_ColumnActive]          = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-		style.Colors[ImGuiCol_ResizeGrip]            = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_ResizeGripHovered]     = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-		style.Colors[ImGuiCol_ResizeGripActive]      = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-		style.Colors[ImGuiCol_CloseButton]           = ImVec4(0.59f, 0.59f, 0.59f, 1.00f);
-		style.Colors[ImGuiCol_CloseButtonHovered]    = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_CloseButtonActive]     = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
-		style.Colors[ImGuiCol_PlotLines]             = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
-		style.Colors[ImGuiCol_PlotLinesHovered]      = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
-		style.Colors[ImGuiCol_PlotHistogram]         = ImVec4(1.0, 0.8, 0.2, 1.0);
-		style.Colors[ImGuiCol_PlotHistogramHovered]  = ImVec4(0.7, 0.5, 0.1, 0.5);
-		style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.32f, 0.52f, 0.65f, 1.00f);
-		style.Colors[ImGuiCol_ModalWindowDarkening]  = ImVec4(0.20f, 0.20f, 0.20f, 0.50f);
+		style.Colors[ImGuiCol_ResizeGrip] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+		style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+		style.Colors[ImGuiCol_CloseButton] = ImVec4(0.59f, 0.59f, 0.59f, 1.00f);
+		style.Colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_CloseButtonActive] = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_PlotLines] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+		style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+		style.Colors[ImGuiCol_PlotHistogram] = ImVec4(1.0, 0.8, 0.2, 1.0);
+		style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.7, 0.5, 0.1, 0.5);
+		style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.32f, 0.52f, 0.65f, 1.00f);
+		style.Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.20f, 0.20f, 0.20f, 0.50f);
 		logoTexture = logoTextureLight;
 	}
-	else if (styleId == 1) {
+	else if (styleId == 1)
+	{
 		// base16-atelier-dune
 		ImVec4 base[16] = {
 			ImGui::ColorConvertU32ToFloat4(IM_COL32(0x20, 0x20, 0x1d, 0xff)),
@@ -1052,52 +1280,53 @@ static void refreshStyle() {
 			ImGui::ColorConvertU32ToFloat4(IM_COL32(0xd4, 0x35, 0x52, 0xff)),
 		};
 
-		style.Colors[ImGuiCol_Text]                 = base[0x6];
-		style.Colors[ImGuiCol_TextDisabled]         = base[0x4];
-		style.Colors[ImGuiCol_WindowBg]             = base[0x2];
-		style.Colors[ImGuiCol_ChildWindowBg]        = base[0x2];
-		style.Colors[ImGuiCol_PopupBg]              = base[0x2];
-		style.Colors[ImGuiCol_Border]               = transparent;
-		style.Colors[ImGuiCol_BorderShadow]         = transparent;
-		style.Colors[ImGuiCol_FrameBg]              = base[0x1];
-		style.Colors[ImGuiCol_FrameBgHovered]       = base[0x1];
-		style.Colors[ImGuiCol_FrameBgActive]        = base[0x1];
-		style.Colors[ImGuiCol_TitleBg]              = base[0x3];
-		style.Colors[ImGuiCol_TitleBgCollapsed]     = base[0x3];
-		style.Colors[ImGuiCol_TitleBgActive]        = base[0x3];
-		style.Colors[ImGuiCol_MenuBarBg]            = base[0x2];
-		style.Colors[ImGuiCol_ScrollbarBg]          = base[0x3];
-		style.Colors[ImGuiCol_ScrollbarGrab]        = base[0x4];
+		style.Colors[ImGuiCol_Text] = base[0x6];
+		style.Colors[ImGuiCol_TextDisabled] = base[0x4];
+		style.Colors[ImGuiCol_WindowBg] = base[0x2];
+		style.Colors[ImGuiCol_ChildWindowBg] = base[0x2];
+		style.Colors[ImGuiCol_PopupBg] = base[0x2];
+		style.Colors[ImGuiCol_Border] = transparent;
+		style.Colors[ImGuiCol_BorderShadow] = transparent;
+		style.Colors[ImGuiCol_FrameBg] = base[0x1];
+		style.Colors[ImGuiCol_FrameBgHovered] = base[0x1];
+		style.Colors[ImGuiCol_FrameBgActive] = base[0x1];
+		style.Colors[ImGuiCol_TitleBg] = base[0x3];
+		style.Colors[ImGuiCol_TitleBgCollapsed] = base[0x3];
+		style.Colors[ImGuiCol_TitleBgActive] = base[0x3];
+		style.Colors[ImGuiCol_MenuBarBg] = base[0x2];
+		style.Colors[ImGuiCol_ScrollbarBg] = base[0x3];
+		style.Colors[ImGuiCol_ScrollbarGrab] = base[0x4];
 		style.Colors[ImGuiCol_ScrollbarGrabHovered] = base[0x4];
-		style.Colors[ImGuiCol_ScrollbarGrabActive]  = base[0x4];
-		style.Colors[ImGuiCol_ComboBg]              = base[0x4];
-		style.Colors[ImGuiCol_CheckMark]            = base[0x4];
-		style.Colors[ImGuiCol_SliderGrab]           = base[0x4];
-		style.Colors[ImGuiCol_SliderGrabActive]     = base[0x4];
-		style.Colors[ImGuiCol_Button]               = base[0x3];
-		style.Colors[ImGuiCol_ButtonHovered]        = base[0x4];
-		style.Colors[ImGuiCol_ButtonActive]         = base[0x4];
-		style.Colors[ImGuiCol_Header]               = base[0x3];
-		style.Colors[ImGuiCol_HeaderHovered]        = base[0x3];
-		style.Colors[ImGuiCol_HeaderActive]         = base[0x3];
+		style.Colors[ImGuiCol_ScrollbarGrabActive] = base[0x4];
+		style.Colors[ImGuiCol_ComboBg] = base[0x4];
+		style.Colors[ImGuiCol_CheckMark] = base[0x4];
+		style.Colors[ImGuiCol_SliderGrab] = base[0x4];
+		style.Colors[ImGuiCol_SliderGrabActive] = base[0x4];
+		style.Colors[ImGuiCol_Button] = base[0x3];
+		style.Colors[ImGuiCol_ButtonHovered] = base[0x4];
+		style.Colors[ImGuiCol_ButtonActive] = base[0x4];
+		style.Colors[ImGuiCol_Header] = base[0x3];
+		style.Colors[ImGuiCol_HeaderHovered] = base[0x3];
+		style.Colors[ImGuiCol_HeaderActive] = base[0x3];
 		// style.Colors[ImGuiCol_Column]               = base[0x2];
 		// style.Colors[ImGuiCol_ColumnHovered]        = base[0x2];
 		// style.Colors[ImGuiCol_ColumnActive]         = base[0x2];
-		style.Colors[ImGuiCol_ResizeGrip]           = base[0x2];
-		style.Colors[ImGuiCol_ResizeGripHovered]    = base[0x2];
-		style.Colors[ImGuiCol_ResizeGripActive]     = base[0x2];
-		style.Colors[ImGuiCol_CloseButton]          = base[0x2];
-		style.Colors[ImGuiCol_CloseButtonHovered]   = base[0x2];
-		style.Colors[ImGuiCol_CloseButtonActive]    = base[0x2];
-		style.Colors[ImGuiCol_PlotLines]            = base[0x4];
-		style.Colors[ImGuiCol_PlotLinesHovered]     = base[0x4];
-		style.Colors[ImGuiCol_PlotHistogram]        = darken(base[0x8], 0.2);
+		style.Colors[ImGuiCol_ResizeGrip] = base[0x2];
+		style.Colors[ImGuiCol_ResizeGripHovered] = base[0x2];
+		style.Colors[ImGuiCol_ResizeGripActive] = base[0x2];
+		style.Colors[ImGuiCol_CloseButton] = base[0x2];
+		style.Colors[ImGuiCol_CloseButtonHovered] = base[0x2];
+		style.Colors[ImGuiCol_CloseButtonActive] = base[0x2];
+		style.Colors[ImGuiCol_PlotLines] = base[0x4];
+		style.Colors[ImGuiCol_PlotLinesHovered] = base[0x4];
+		style.Colors[ImGuiCol_PlotHistogram] = darken(base[0x8], 0.2);
 		style.Colors[ImGuiCol_PlotHistogramHovered] = alpha(base[0x7], 0.2);
-		style.Colors[ImGuiCol_TextSelectedBg]       = base[0x3];
+		style.Colors[ImGuiCol_TextSelectedBg] = base[0x3];
 		style.Colors[ImGuiCol_ModalWindowDarkening] = alpha(base[0x1], 0.5);
 		logoTexture = logoTextureLight;
 	}
-	else if (styleId == 2) {
+	else if (styleId == 2)
+	{
 		// base16-atelier-dune
 		ImVec4 base[16] = {
 			ImGui::ColorConvertU32ToFloat4(IM_COL32(0x20, 0x20, 0x1d, 0xff)),
@@ -1118,52 +1347,53 @@ static void refreshStyle() {
 			ImGui::ColorConvertU32ToFloat4(IM_COL32(0xd4, 0x35, 0x52, 0xff)),
 		};
 
-		style.Colors[ImGuiCol_Text]                 = base[0x1];
-		style.Colors[ImGuiCol_TextDisabled]         = base[0x2];
-		style.Colors[ImGuiCol_WindowBg]             = base[0x7];
-		style.Colors[ImGuiCol_ChildWindowBg]        = base[0x7];
-		style.Colors[ImGuiCol_PopupBg]              = base[0x7];
-		style.Colors[ImGuiCol_Border]               = transparent;
-		style.Colors[ImGuiCol_BorderShadow]         = transparent;
-		style.Colors[ImGuiCol_FrameBg]              = base[0x6];
-		style.Colors[ImGuiCol_FrameBgHovered]       = base[0x6];
-		style.Colors[ImGuiCol_FrameBgActive]        = base[0x6];
-		style.Colors[ImGuiCol_TitleBg]              = base[0x4];
-		style.Colors[ImGuiCol_TitleBgCollapsed]     = base[0x4];
-		style.Colors[ImGuiCol_TitleBgActive]        = base[0x4];
-		style.Colors[ImGuiCol_MenuBarBg]            = base[0x7];
-		style.Colors[ImGuiCol_ScrollbarBg]          = base[0x6];
-		style.Colors[ImGuiCol_ScrollbarGrab]        = base[0x5];
+		style.Colors[ImGuiCol_Text] = base[0x1];
+		style.Colors[ImGuiCol_TextDisabled] = base[0x2];
+		style.Colors[ImGuiCol_WindowBg] = base[0x7];
+		style.Colors[ImGuiCol_ChildWindowBg] = base[0x7];
+		style.Colors[ImGuiCol_PopupBg] = base[0x7];
+		style.Colors[ImGuiCol_Border] = transparent;
+		style.Colors[ImGuiCol_BorderShadow] = transparent;
+		style.Colors[ImGuiCol_FrameBg] = base[0x6];
+		style.Colors[ImGuiCol_FrameBgHovered] = base[0x6];
+		style.Colors[ImGuiCol_FrameBgActive] = base[0x6];
+		style.Colors[ImGuiCol_TitleBg] = base[0x4];
+		style.Colors[ImGuiCol_TitleBgCollapsed] = base[0x4];
+		style.Colors[ImGuiCol_TitleBgActive] = base[0x4];
+		style.Colors[ImGuiCol_MenuBarBg] = base[0x7];
+		style.Colors[ImGuiCol_ScrollbarBg] = base[0x6];
+		style.Colors[ImGuiCol_ScrollbarGrab] = base[0x5];
 		style.Colors[ImGuiCol_ScrollbarGrabHovered] = base[0x5];
-		style.Colors[ImGuiCol_ScrollbarGrabActive]  = base[0x5];
-		style.Colors[ImGuiCol_ComboBg]              = base[0x6];
-		style.Colors[ImGuiCol_CheckMark]            = base[0x5];
-		style.Colors[ImGuiCol_SliderGrab]           = base[0x5];
-		style.Colors[ImGuiCol_SliderGrabActive]     = base[0x5];
-		style.Colors[ImGuiCol_Button]               = base[0x5];
-		style.Colors[ImGuiCol_ButtonHovered]        = base[0x6];
-		style.Colors[ImGuiCol_ButtonActive]         = base[0x6];
-		style.Colors[ImGuiCol_Header]               = base[0x6];
-		style.Colors[ImGuiCol_HeaderHovered]        = base[0x5];
-		style.Colors[ImGuiCol_HeaderActive]         = base[0x5];
+		style.Colors[ImGuiCol_ScrollbarGrabActive] = base[0x5];
+		style.Colors[ImGuiCol_ComboBg] = base[0x6];
+		style.Colors[ImGuiCol_CheckMark] = base[0x5];
+		style.Colors[ImGuiCol_SliderGrab] = base[0x5];
+		style.Colors[ImGuiCol_SliderGrabActive] = base[0x5];
+		style.Colors[ImGuiCol_Button] = base[0x5];
+		style.Colors[ImGuiCol_ButtonHovered] = base[0x6];
+		style.Colors[ImGuiCol_ButtonActive] = base[0x6];
+		style.Colors[ImGuiCol_Header] = base[0x6];
+		style.Colors[ImGuiCol_HeaderHovered] = base[0x5];
+		style.Colors[ImGuiCol_HeaderActive] = base[0x5];
 		// style.Colors[ImGuiCol_Column]               = base[0x2];
 		// style.Colors[ImGuiCol_ColumnHovered]        = base[0x2];
 		// style.Colors[ImGuiCol_ColumnActive]         = base[0x2];
-		style.Colors[ImGuiCol_ResizeGrip]           = base[0x2];
-		style.Colors[ImGuiCol_ResizeGripHovered]    = base[0x2];
-		style.Colors[ImGuiCol_ResizeGripActive]     = base[0x2];
-		style.Colors[ImGuiCol_CloseButton]          = base[0x2];
-		style.Colors[ImGuiCol_CloseButtonHovered]   = base[0x2];
-		style.Colors[ImGuiCol_CloseButtonActive]    = base[0x2];
-		style.Colors[ImGuiCol_PlotLines]            = base[0x4];
-		style.Colors[ImGuiCol_PlotLinesHovered]     = base[0x4];
-		style.Colors[ImGuiCol_PlotHistogram]        = base[0xc];
+		style.Colors[ImGuiCol_ResizeGrip] = base[0x2];
+		style.Colors[ImGuiCol_ResizeGripHovered] = base[0x2];
+		style.Colors[ImGuiCol_ResizeGripActive] = base[0x2];
+		style.Colors[ImGuiCol_CloseButton] = base[0x2];
+		style.Colors[ImGuiCol_CloseButtonHovered] = base[0x2];
+		style.Colors[ImGuiCol_CloseButtonActive] = base[0x2];
+		style.Colors[ImGuiCol_PlotLines] = base[0x4];
+		style.Colors[ImGuiCol_PlotLinesHovered] = base[0x4];
+		style.Colors[ImGuiCol_PlotHistogram] = base[0xc];
 		style.Colors[ImGuiCol_PlotHistogramHovered] = alpha(base[0x5], 0.8);
-		style.Colors[ImGuiCol_TextSelectedBg]       = base[0x3];
+		style.Colors[ImGuiCol_TextSelectedBg] = base[0x3];
 		style.Colors[ImGuiCol_ModalWindowDarkening] = alpha(base[0x2], 0.5);
 		logoTexture = logoTextureDark;
 	}
-	else if (styleId == 3) {
+	else if (styleId == 3)
+	{
 		// base16-ashes
 		ImVec4 base[16] = {
 			ImGui::ColorConvertU32ToFloat4(IM_COL32(0x0c, 0x0d, 0x0e, 0xff)),
@@ -1184,55 +1414,55 @@ static void refreshStyle() {
 			ImGui::ColorConvertU32ToFloat4(IM_COL32(0xb1, 0x59, 0x28, 0xff)),
 		};
 
-		style.Colors[ImGuiCol_Text]                 = base[0x1];
-		style.Colors[ImGuiCol_TextDisabled]         = base[0x2];
-		style.Colors[ImGuiCol_WindowBg]             = base[0x7];
-		style.Colors[ImGuiCol_ChildWindowBg]        = base[0x7];
-		style.Colors[ImGuiCol_PopupBg]              = base[0x7];
-		style.Colors[ImGuiCol_Border]               = transparent;
-		style.Colors[ImGuiCol_BorderShadow]         = transparent;
-		style.Colors[ImGuiCol_FrameBg]              = base[0x6];
-		style.Colors[ImGuiCol_FrameBgHovered]       = base[0x6];
-		style.Colors[ImGuiCol_FrameBgActive]        = base[0x6];
-		style.Colors[ImGuiCol_TitleBg]              = base[0x4];
-		style.Colors[ImGuiCol_TitleBgCollapsed]     = base[0x4];
-		style.Colors[ImGuiCol_TitleBgActive]        = base[0x4];
-		style.Colors[ImGuiCol_MenuBarBg]            = base[0x7];
-		style.Colors[ImGuiCol_ScrollbarBg]          = base[0x6];
-		style.Colors[ImGuiCol_ScrollbarGrab]        = base[0x5];
+		style.Colors[ImGuiCol_Text] = base[0x1];
+		style.Colors[ImGuiCol_TextDisabled] = base[0x2];
+		style.Colors[ImGuiCol_WindowBg] = base[0x7];
+		style.Colors[ImGuiCol_ChildWindowBg] = base[0x7];
+		style.Colors[ImGuiCol_PopupBg] = base[0x7];
+		style.Colors[ImGuiCol_Border] = transparent;
+		style.Colors[ImGuiCol_BorderShadow] = transparent;
+		style.Colors[ImGuiCol_FrameBg] = base[0x6];
+		style.Colors[ImGuiCol_FrameBgHovered] = base[0x6];
+		style.Colors[ImGuiCol_FrameBgActive] = base[0x6];
+		style.Colors[ImGuiCol_TitleBg] = base[0x4];
+		style.Colors[ImGuiCol_TitleBgCollapsed] = base[0x4];
+		style.Colors[ImGuiCol_TitleBgActive] = base[0x4];
+		style.Colors[ImGuiCol_MenuBarBg] = base[0x7];
+		style.Colors[ImGuiCol_ScrollbarBg] = base[0x6];
+		style.Colors[ImGuiCol_ScrollbarGrab] = base[0x5];
 		style.Colors[ImGuiCol_ScrollbarGrabHovered] = base[0x5];
-		style.Colors[ImGuiCol_ScrollbarGrabActive]  = base[0x5];
-		style.Colors[ImGuiCol_ComboBg]              = base[0x6];
-		style.Colors[ImGuiCol_CheckMark]            = base[0x5];
-		style.Colors[ImGuiCol_SliderGrab]           = base[0x5];
-		style.Colors[ImGuiCol_SliderGrabActive]     = base[0x5];
-		style.Colors[ImGuiCol_Button]               = base[0x5];
-		style.Colors[ImGuiCol_ButtonHovered]        = base[0x6];
-		style.Colors[ImGuiCol_ButtonActive]         = base[0x6];
-		style.Colors[ImGuiCol_Header]               = base[0x6];
-		style.Colors[ImGuiCol_HeaderHovered]        = base[0x5];
-		style.Colors[ImGuiCol_HeaderActive]         = base[0x5];
+		style.Colors[ImGuiCol_ScrollbarGrabActive] = base[0x5];
+		style.Colors[ImGuiCol_ComboBg] = base[0x6];
+		style.Colors[ImGuiCol_CheckMark] = base[0x5];
+		style.Colors[ImGuiCol_SliderGrab] = base[0x5];
+		style.Colors[ImGuiCol_SliderGrabActive] = base[0x5];
+		style.Colors[ImGuiCol_Button] = base[0x5];
+		style.Colors[ImGuiCol_ButtonHovered] = base[0x6];
+		style.Colors[ImGuiCol_ButtonActive] = base[0x6];
+		style.Colors[ImGuiCol_Header] = base[0x6];
+		style.Colors[ImGuiCol_HeaderHovered] = base[0x5];
+		style.Colors[ImGuiCol_HeaderActive] = base[0x5];
 		// style.Colors[ImGuiCol_Column]               = base[0x2];
 		// style.Colors[ImGuiCol_ColumnHovered]        = base[0x2];
 		// style.Colors[ImGuiCol_ColumnActive]         = base[0x2];
-		style.Colors[ImGuiCol_ResizeGrip]           = base[0x2];
-		style.Colors[ImGuiCol_ResizeGripHovered]    = base[0x2];
-		style.Colors[ImGuiCol_ResizeGripActive]     = base[0x2];
-		style.Colors[ImGuiCol_CloseButton]          = base[0x2];
-		style.Colors[ImGuiCol_CloseButtonHovered]   = base[0x2];
-		style.Colors[ImGuiCol_CloseButtonActive]    = base[0x2];
-		style.Colors[ImGuiCol_PlotLines]            = base[0x4];
-		style.Colors[ImGuiCol_PlotLinesHovered]     = base[0x4];
-		style.Colors[ImGuiCol_PlotHistogram]        = base[0xd];
+		style.Colors[ImGuiCol_ResizeGrip] = base[0x2];
+		style.Colors[ImGuiCol_ResizeGripHovered] = base[0x2];
+		style.Colors[ImGuiCol_ResizeGripActive] = base[0x2];
+		style.Colors[ImGuiCol_CloseButton] = base[0x2];
+		style.Colors[ImGuiCol_CloseButtonHovered] = base[0x2];
+		style.Colors[ImGuiCol_CloseButtonActive] = base[0x2];
+		style.Colors[ImGuiCol_PlotLines] = base[0x4];
+		style.Colors[ImGuiCol_PlotLinesHovered] = base[0x4];
+		style.Colors[ImGuiCol_PlotHistogram] = base[0xd];
 		style.Colors[ImGuiCol_PlotHistogramHovered] = alpha(base[0xc], 0.8);
-		style.Colors[ImGuiCol_TextSelectedBg]       = base[0x3];
+		style.Colors[ImGuiCol_TextSelectedBg] = base[0x3];
 		style.Colors[ImGuiCol_ModalWindowDarkening] = alpha(base[0x2], 0.5);
 		logoTexture = logoTextureDark;
 	}
 }
 
-
-void uiInit() {
+void uiInit()
+{
 	ImGui::GetIO().IniFilename = NULL;
 	styleId = 3;
 
@@ -1245,7 +1475,8 @@ void uiInit() {
 	// If this gets any more complicated, it should be JSON.
 	{
 		FILE *f = fopen("ui.dat", "rb");
-		if (f) {
+		if (f)
+		{
 			fread(&styleId, sizeof(styleId), 1, f);
 			fclose(f);
 		}
@@ -1254,19 +1485,20 @@ void uiInit() {
 	refreshStyle();
 }
 
-
-void uiDestroy() {
+void uiDestroy()
+{
 	// Save UI settings
 	{
 		FILE *f = fopen("ui.dat", "wb");
-		if (f) {
+		if (f)
+		{
 			fwrite(&styleId, sizeof(styleId), 1, f);
 			fclose(f);
 		}
 	}
 }
 
-
-void uiRender() {
+void uiRender()
+{
 	renderMain();
 }

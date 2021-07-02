@@ -202,7 +202,6 @@ struct Bank {
 	void loadWAV(const char *filename);
 	/** Saves each wave to its own file in a directory */
 	void saveWaves(const char *dirname);
-	void saveWaves(const char *dirname, SF_INFO info, long bank_len, long wave_len);
 };
 
 
