@@ -88,7 +88,7 @@ int removeFolder(const char *path)
 {
 	char foldername[1024];
 	snprintf(foldername, sizeof(foldername), "%s", path);
-#ifdef ARCH_LIN
+#if defined(ARCH_LIN) || defined(ARCH_MAC)
 	std::string command = "rm -r ";
 	command += foldername;
 	return system(command.c_str());
