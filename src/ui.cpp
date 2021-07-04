@@ -603,8 +603,8 @@ void renderPopup()
 		// Wave Bank Length (Width * Height)
 		const char *bankSizesH[] = {"16", "32", "64"};
 		const char *bankSizesW[] = {"16", "32", "64"};
-		static int height = 0;
-		static int width = 0;
+		static int height = 1;
+		static int width = 1;
 
 		ImGui::Text("Bank Length:");
 		ImGui::SameLine();
@@ -620,7 +620,7 @@ void renderPopup()
 
 		// Wave Length
 		const char *waveLengths[] = {"8", "16", "32", "64", "128", "256", "512", "1028", "2048"};
-		static int wavelength = 3;
+		static int wavelength = 5;
 		ImGui::Text("Wave Length:");
 		ImGui::SameLine();
 		ImGui::Combo("##wavelength", &wavelength, waveLengths, IM_ARRAYSIZE(waveLengths));
