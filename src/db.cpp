@@ -15,7 +15,7 @@ struct BankEntry {
 	std::string attribution;
 	std::string notes;
 	double datestamp;
-	float samples[BANK_LEN * WAVE_LEN];
+	float samples[MAX_BANK_LEN * WAVE_LEN];
 	bool loaded;
 };
 

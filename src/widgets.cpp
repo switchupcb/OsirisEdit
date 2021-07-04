@@ -373,7 +373,7 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 
 		// Ctrl-click dragging buffers
 		static Bank dragBank;
-		static Wave dragWaves[BANK_LEN];
+		static Wave dragWaves[MAX_BANK_LEN];
 		static int dragId, dragStart, dragEnd;
 		if (g.IO.KeyCtrl && !g.IO.MouseReleased[0]) {
 			if (g.IO.MouseClicked[0]) {

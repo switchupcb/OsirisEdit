@@ -3,7 +3,6 @@
 #include <sndfile.h>
 #include <iostream>
 
-
 void Bank::clear() {
 	// The lazy way
 	memset(this, 0, sizeof(Bank));

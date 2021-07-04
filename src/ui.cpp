@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 
+int BANK_LEN = 32;
 static bool showTestWindow = false;
 static bool showConvertPopup = false;
 static ImTextureID logoTextureLight;
@@ -254,6 +255,7 @@ static void menuSelectAll()
 
 static void menuCopy()
 {
+	std::cout << "copied" << std::endl;
 	currentBank.waves[selectedId].clipboardCopy();
 }
 
@@ -749,46 +751,6 @@ void renderPopup()
 	}
 }
 
-static void convertPopup()
-{
-	if (showConvertPopup)
-	{
-		showConvertPopup = false;
-		ImGui::OpenPopup("Convert");
-	}
-
-	ImGui::SetNextWindowContentWidth(400.0);
-	if (ImGui::BeginPopupModal("Convert", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
-	{
-		ImGui::PushItemWidth(-140.0);
-		//ImGui::InputText("Title (required)", title, sizeof(title));
-		//ImGui::InputText("Author (required)", attribution, sizeof(attribution));
-		//ImGui::InputTextMultiline("Notes", notes, sizeof(notes));
-
-		/*ImGui::TextWrapped("%s", "By sharing the currently loaded wavetable bank to WaveEdit Online, you agree to release this work under the CC0 public domain license.");
-		*/
-
-		if (ImGui::Button("Cancel"))
-			ImGui::CloseCurrentPopup();
-
-		ImGui::SameLine();
-		bool convertable = true /*(strlen(title) > 0 && strlen(attribution) > 0)*/;
-		if (!convertable)
-			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
-		if (ImGui::Button("Convert"))
-		{
-			if (convertable)
-			{
-				// Convert the file to osiris.
-				ImGui::CloseCurrentPopup();
-			}
-		}
-		if (!convertable)
-			ImGui::PopStyleVar();
-		ImGui::EndPopup();
-	}
-}
-
 void renderPreview()
 {
 	ImGui::Checkbox("Play", &playEnabled);
@@ -1141,6 +1103,16 @@ void renderMain()
 		renderPopup();
 		renderPreview();
 		// Tab bar
+
+		// OOGA
+		const char *bankLens[] = {"16", "32", "64"};
+		static int len = 0;
+		ImGui::PushItemWidth(100.0);
+		ImGui::Combo("##width", &len, bankLens, IM_ARRAYSIZE(bankLens));
+		ImGui::PopItemWidth();
+		ImGui::SameLine();
+		BANK_LEN = atoi(bankLens[len]);
+		
 		{
 			static const char *tabLabels[NUM_PAGES] = {
 				"Waveform Editor",

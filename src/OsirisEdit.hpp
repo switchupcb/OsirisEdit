@@ -179,12 +179,13 @@ extern bool clipboardActive;
 // bank.cpp
 ////////////////////
 
-#define BANK_LEN 64
+extern int BANK_LEN;
+#define MAX_BANK_LEN 64
 #define BANK_GRID_WIDTH 8
 #define BANK_GRID_HEIGHT 8
 
 struct Bank {
-	Wave waves[BANK_LEN];
+	Wave waves[MAX_BANK_LEN];
 
 	void clear();
 	void swap(int i, int j);

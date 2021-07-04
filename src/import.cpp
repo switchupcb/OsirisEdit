@@ -31,7 +31,6 @@ static Bank importBank;
 const int audioLenMin = 32;
 const int audioLenMax = BANK_LEN * WAVE_LEN * 100;
 
-
 static void zoomFit() {
 	zoom = clampf((float)audioLen / (BANK_LEN * WAVE_LEN), 0.01, 100.0);
 }
