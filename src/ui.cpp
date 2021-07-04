@@ -88,9 +88,17 @@ int removeFolder(const char *path)
 {
 	char foldername[1024];
 	snprintf(foldername, sizeof(foldername), "%s", path);
+#ifdef ARCH_LIN
 	std::string command = "rm -r ";
 	command += foldername;
 	return system(command.c_str());
+#endif
+#ifdef ARCH_WIN
+	std::string command = "rmdir /s /q ";
+	command += foldername;
+	return system(command.c_str());
+#endif
+	return 1;
 }
 
 static ImTextureID loadImage(const char *filename)
