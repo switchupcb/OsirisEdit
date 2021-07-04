@@ -15,7 +15,7 @@
 	<key>CFBundleSignature</key>
 	<string>WAVE</string>
 	<key>CFBundleExecutable</key>
-	<string>WaveEdit</string>
+	<string>OsirisEdit</string>
 	<key>CFBundleIconFile</key>
 	<string>logo</string>
 	<key>NSPrincipalClass</key>
