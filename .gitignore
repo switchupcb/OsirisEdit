@@ -1,6 +1,7 @@
 *.o
 dep/*
 ext/*
+dist/*
 !dep/Makefile
 autosave.dat
 ui.dat
