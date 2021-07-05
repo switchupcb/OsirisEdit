@@ -1,10 +1,9 @@
+.vs*
 *.o
 dep/*
 ext/*
 dist/*
-!dep/Makefile
+OsirisEdit
 autosave.dat
 ui.dat
-.vs*
-dist
-OsirisEdit
+!dep/Makefile
