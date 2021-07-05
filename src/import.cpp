@@ -107,7 +107,7 @@ static void computeImport(float *samples) {
 		return;
 	}
 
-	float importSamples[BANK_LEN * WAVE_LEN] = {};
+	float importSamples[MAX_BANK_LEN * WAVE_LEN] = {};
 
 	// A bunch of weird constants to align the resampler correctly
 	// Basically x's and w's are indices for the audio array, y's are for the bank array
@@ -186,7 +186,7 @@ void importPage() {
 		// Audio preview
 		ImGui::Text("Imported Audio Preview");
 		if (audioPreview) {
-			float audioPreviewGain[BANK_LEN * WAVE_LEN] = {};
+			float audioPreviewGain[MAX_BANK_LEN * WAVE_LEN] = {};
 			for (int i = 0; i < BANK_LEN * WAVE_LEN; i++) {
 				audioPreviewGain[i] = amp * audioPreview[i];
 			}
