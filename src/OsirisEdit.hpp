@@ -170,7 +170,7 @@ struct Wave {
 	/** Writes to a global state */
 	void clipboardCopy();
 	void clipboardCopyAll(int index);
-	void clipbaordSetLength(int length);
+	void clipboardSetLength(int length);
 	void clipboardPaste();
 	void clipboardPasteAll(int index);
 };

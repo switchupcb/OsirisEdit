@@ -317,7 +317,7 @@ void Wave::clipboardCopy() {
 	clipboardArrayActive = false;
 }
 
-void Wave::clipbaordSetLength(int length) {
+void Wave::clipboardSetLength(int length) {
 	realClipboardLen = length;
 }
 

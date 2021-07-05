@@ -268,7 +268,7 @@ static void menuCopy()
 
 static void menuCopyAll()
 {
-	currentBank.waves[0].clipbaordSetLength(maxi(selectedId, lastSelectedId) - mini(selectedId, lastSelectedId));
+	currentBank.waves[0].clipboardSetLength(maxi(selectedId, lastSelectedId) - mini(selectedId, lastSelectedId));
 	for (int i = mini(selectedId, lastSelectedId), j = 0; i <= maxi(selectedId, lastSelectedId); i++, j++)
 	{
 		currentBank.waves[i].clipboardCopyAll(j);
