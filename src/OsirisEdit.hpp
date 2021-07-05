@@ -169,10 +169,14 @@ struct Wave {
 	void loadWAV(const char *filename);
 	/** Writes to a global state */
 	void clipboardCopy();
+	void clipboardCopyAll(int index);
+	void clipbaordSetLength(int length);
 	void clipboardPaste();
+	void clipboardPasteAll(int index);
 };
 
 extern bool clipboardActive;
+extern bool clipboardArrayActive;
 
 
 ////////////////////

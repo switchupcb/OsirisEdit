@@ -263,8 +263,17 @@ static void menuSelectAll()
 
 static void menuCopy()
 {
-	std::cout << "copied" << std::endl;
 	currentBank.waves[selectedId].clipboardCopy();
+}
+
+static void menuCopyAll()
+{
+	currentBank.waves[0].clipbaordSetLength(maxi(selectedId, lastSelectedId) - mini(selectedId, lastSelectedId));
+	std::cout << maxi(selectedId, lastSelectedId) - mini(selectedId, lastSelectedId) << std::endl;
+	for (int i = mini(selectedId, lastSelectedId), j = 0; i <= maxi(selectedId, lastSelectedId); i++, j++)
+	{
+		currentBank.waves[i].clipboardCopyAll(j);
+	}
 }
 
 static void menuCut()
@@ -277,6 +286,15 @@ static void menuCut()
 static void menuPaste()
 {
 	currentBank.waves[selectedId].clipboardPaste();
+	historyPush();
+}
+
+static void menuPasteAll()
+{
+	for (int i = selectedId, j = 0; i < BANK_LEN; i++, j++)
+	{
+		currentBank.waves[i].clipboardPasteAll(j);
+	}
 	historyPush();
 }
 
@@ -326,12 +344,22 @@ static void menuKeyCommands()
 			historyRedo();
 		if (ImGui::IsKeyPressed(SDLK_a) && !io.KeyShift && !io.KeyAlt)
 			menuSelectAll();
-		if (ImGui::IsKeyPressed(SDLK_c) && !io.KeyShift && !io.KeyAlt)
-			menuCopy();
 		if (ImGui::IsKeyPressed(SDLK_x) && !io.KeyShift && !io.KeyAlt)
 			menuCut();
 		if (ImGui::IsKeyPressed(SDLK_v) && !io.KeyShift && !io.KeyAlt)
+		{
 			menuPaste();
+			menuPasteAll();
+		}
+		if (ImGui::IsKeyPressed(SDLK_c) && !io.KeyShift && !io.KeyAlt)
+		{
+			if (lastSelectedId - selectedId != 0)
+			{
+				menuCopyAll();
+			} else {
+				menuCopy();
+			}
+		}
 	}
 	// I have NO idea why the scancode is needed here but the keycodes are needed for the letters.
 	// It looks like SDLZ_F1 is not defined correctly or something.
@@ -384,7 +412,16 @@ void renderWaveMenu()
 	else
 		snprintf(menuName, sizeof(menuName), "(Wave %d)", selectedId);
 	ImGui::MenuItem(menuName, NULL, false, false);
-
+	if (selectedId - lastSelectedId != 0) {
+		if (ImGui::MenuItem("Copy All", ImGui::GetIO().OSXBehaviors ? "Cmd+C" : "Ctrl+C", false, selectedId - lastSelectedId != 0))
+	{
+		menuCopyAll();
+	}
+	}
+	if (ImGui::MenuItem("Paste All", ImGui::GetIO().OSXBehaviors ? "Cmd+V" : "Ctrl+V", false, clipboardArrayActive))
+	{
+		menuPasteAll();
+	}
 	if (ImGui::MenuItem("Clear", "Delete"))
 	{
 		menuClear();
@@ -1120,7 +1157,7 @@ void renderMain()
 		ImGui::PopItemWidth();
 		ImGui::SameLine();
 		BANK_LEN = atoi(bankLens[len]);
-		
+
 		{
 			static const char *tabLabels[NUM_PAGES] = {
 				"Waveform Editor",

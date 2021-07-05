@@ -1,10 +1,14 @@
 #include "OsirisEdit.hpp"
 #include <string.h>
 #include <sndfile.h>
+#include <iostream>
 
 
 static Wave clipboardWave = {};
+static Wave clipboardWaveArray[MAX_BANK_LEN];
+int realClipboardLen = 0;
 bool clipboardActive = false;
+bool clipboardArrayActive = false;
 
 
 const char *effectNames[EFFECTS_LEN] {
@@ -310,10 +314,30 @@ void Wave::loadWAV(const char *filename) {
 void Wave::clipboardCopy() {
 	memcpy(&clipboardWave, this, sizeof(*this));
 	clipboardActive = true;
+	clipboardArrayActive = false;
+}
+
+void Wave::clipbaordSetLength(int length) {
+	realClipboardLen = length;
+}
+
+void Wave::clipboardCopyAll(int index) {
+	if (index > realClipboardLen) {
+		return;
+	}
+	memcpy(&clipboardWaveArray[index], this, sizeof(*this));
+	clipboardArrayActive = true;
+	clipboardActive = false;
 }
 
 void Wave::clipboardPaste() {
 	if (clipboardActive) {
 		memcpy(this, &clipboardWave, sizeof(*this));
+	}
+}
+
+void Wave::clipboardPasteAll(int index) {
+	if (clipboardArrayActive && index <= realClipboardLen) {
+		memcpy(this, &clipboardWaveArray[index], sizeof(*this));
 	}
 }
