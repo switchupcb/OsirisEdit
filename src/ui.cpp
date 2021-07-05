@@ -269,7 +269,6 @@ static void menuCopy()
 static void menuCopyAll()
 {
 	currentBank.waves[0].clipbaordSetLength(maxi(selectedId, lastSelectedId) - mini(selectedId, lastSelectedId));
-	std::cout << maxi(selectedId, lastSelectedId) - mini(selectedId, lastSelectedId) << std::endl;
 	for (int i = mini(selectedId, lastSelectedId), j = 0; i <= maxi(selectedId, lastSelectedId); i++, j++)
 	{
 		currentBank.waves[i].clipboardCopyAll(j);
@@ -773,7 +772,6 @@ void renderPopup()
 						std::string osirisExportFolder = convertFilename;
 						char letter = 'A' + j;
 						osirisExportFolder += "/osiris/" + std::string(1, letter);
-						std::cout << osirisExportFolder << std::endl;
 						createFolder(osirisExportFolder.c_str());
 						for (auto i = files.begin(); i != files.end(); i++)
 						{
