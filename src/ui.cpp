@@ -79,7 +79,7 @@ static ImVec4 alpha(ImVec4 col, float a)
 int createFolder(const char *path)
 {
 	char foldername[1024];
-	snprintf(foldername, sizeof(foldername), "%s", path);
+	snprintf(foldername, sizeof(foldername), "\"%s\"", path);
 	std::string command = "mkdir ";
 	command += foldername;
 	return system(command.c_str());
@@ -88,7 +88,7 @@ int createFolder(const char *path)
 int removeFolder(const char *path)
 {
 	char foldername[1024];
-	snprintf(foldername, sizeof(foldername), "%s", path);
+	snprintf(foldername, sizeof(foldername), "\"%s\"", path);
 #if defined(ARCH_LIN) || defined(ARCH_MAC)
 	std::string command = "rm -r ";
 	command += foldername;
