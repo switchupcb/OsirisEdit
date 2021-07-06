@@ -2,7 +2,7 @@ doctype
 html
 	head
 		meta(charset='utf-8')
-		title WaveEdit Manual
+		title OsirisEdit Manual
 		style
 			:stylus
 				@font-face {
@@ -54,18 +54,19 @@ html
 
 	body
 		:markdown-it(html=true)
-			# Synthesis Technology WaveEdit
+			# OsirisEdit
 
-			*WaveEdit* is a cross-platform (Mac/Windows/Linux) wavetable and bank editor designed for the Synthesis Technology [E370 Quad Morphing VCO](http://synthtech.com/eurorack/E370/) and [E352 Cloud Terrarium VCO](http://synthtech.com/eurorack/E352/) Eurorack synthesizer modules.
-			It was developed by [Andrew Belt](https://andrewbelt.name/) for Synthesis Technology as a stretch goal of the E370 Kickstarter.
+			*OsirisEdit* is a cross-platform (Mac/Windows/Linux) wavetable and bank editor designed for the [E370 Quad Morphing VCO](http://synthtech.com/eurorack/E370/) and [E352 Cloud Terrarium VCO](http://synthtech.com/eurorack/E352/) Eurorack synthesizer modules.
+			WaveEdit was developed by [Andrew Belt](https://andrewbelt.name/) for as a stretch goal of the E370 Kickstarter.
+			OsirisEdit was developed by [SwitchUpCB](https://fiverr.com/switchupcb) and [Daniel Kasabov](https://danielkasabov.com/).
 
-			*WaveEdit* is available for free download at [http://synthtech.com/waveedit](http://synthtech.com/waveedit).
+			*OsirisEdit* is available for free download at [http://synthtech.com/OsirisEdit](http://synthtech.com/OsirisEdit).
 
 			![](images/2017-10-18-012234_1024x768_scrot.png)
 
 			## Overview
 
-			In *WaveEdit* and the Synthesis Technology E370 and E352 modules, you can load a bank of wavetables and morph/interpolate between them as they cycle at a particular frequency.
+			In *OsirisEdit* and the E370 and E352 modules, you can load a bank of wavetables and morph/interpolate between them as they cycle at a particular frequency.
 
 			- A bank contains 64 wavetables
 			- A wavetable contains 256 samples
@@ -73,7 +74,7 @@ html
 			In Z mode, all 64 wavetables are positioned on a line, and the Z parameter interpolates wavetables from wave 0 to wave 63.
 			In XY mode, the wavetables are positioned on an 8x8 grid and interpolated in 2D.
 
-			There are several methods for creating a bank of wavetables in *WaveEdit*.
+			There are several methods for creating a bank of wavetables in *OsirisEdit*.
 			You may combine any of these methods in unique ways to create your own banks.
 
 			1. Draw samples on the waveform display using the drawing tools
@@ -86,7 +87,7 @@ html
 			8. Import audio and stretch/crop it into adjacent wavetables
 
 			Once you are satisfied with your bank using the bank visualization pages or audio preview, you can save it as a WAV file and load it by the E370 and E352 VCOs with a microSD card.
-			You can share your favorite banks by submitting them to the *WaveEdit* Online database.
+			You can share your favorite banks by submitting them to the *OsirisEdit* Online database.
 
 			## Audio Preview
 
@@ -112,7 +113,7 @@ html
 
 			## Pages
 
-			Immediately below the audio preview section are tabs which select the page of *WaveEdit* to be displayed.
+			Immediately below the audio preview section are tabs which select the page of *OsirisEdit* to be displayed.
 
 			### Waveform Editor
 
@@ -241,29 +242,29 @@ html
 
 			<p class="page-break"></p>
 
-			### WaveEdit Online
+			### OsirisEdit Online
 
-			The WaveEdit Online page allows you to download banks created by others and share your own on an online database.
+			The OsirisEdit Online page allows you to download banks created by others and share your own on an online database.
 
 			![](images/2017-10-18-200323_1024x768_scrot.png)
 
-			The *WaveEdit Online* database stores entire banks which users have shared to the public.
+			The *OsirisEdit Online* database stores entire banks which users have shared to the public.
 
 			You can scroll through the pages of banks, or search using keywords in the search box.
 			To try a bank you are interested in, click **Load Bank**.
 			Note that this replaces the current bank, although you can undo the action with Edit > Undo.
-			After loading a bank, you can preview it without leaving the WaveEdit Online page using the Morph Z and Morph Z Speed sliders in the audio preview as usual.
+			After loading a bank, you can preview it without leaving the OsirisEdit Online page using the Morph Z and Morph Z Speed sliders in the audio preview as usual.
 
 			If you would like to share your currently-loaded bank with others, click **Upload Current Bank**.
 			A popup window will display with a form with Title, Author, and optional Notes text boxes.
-			After clicking Upload, the bank will be sent to the server and will appear in the list after it has been approved by a *WaveEdit Online* moderator.
+			After clicking Upload, the bank will be sent to the server and will appear in the list after it has been approved by a *OsirisEdit Online* moderator.
 			Note that by uploading your bank, you agree to release the bank into the public domain (CC0 license).
 
 			<p class="page-break"></p>
 
 			## Key Commands
 
-			The most efficient way to use *WaveEdit* is with a combination of mouse actions and key commands.
+			The most efficient way to use *OsirisEdit* is with a combination of mouse actions and key commands.
 			Many of these key commands are listed in the menu bar and context menu, but here is a complete list for your convenience.
 
 			| Key Command | Mac | Windows / Linux |
@@ -288,4 +289,4 @@ html
 			| Grid XY View | 3 | 3 |
 			| Waterfall View | 4 | 4 |
 			| Import | 5 | 5 |
-			| WaveEdit Online | 6 | 6 |
+			| OsirisEdit Online | 6 | 6 |
