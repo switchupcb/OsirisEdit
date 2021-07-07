@@ -46,7 +46,7 @@ enum Page
 	GRID_PAGE,
 	WATERFALL_PAGE,
 	IMPORT_PAGE,
-	DB_PAGE,
+	//DB_PAGE,
 	NUM_PAGES
 };
 
@@ -153,9 +153,9 @@ static void showCurrentBankPage()
 	{
 	case EFFECT_PAGE:
 	case IMPORT_PAGE:
-	case DB_PAGE:
+	/*case DB_PAGE:
 		currentPage = EDITOR_PAGE;
-		break;
+		break;*/
 	default:
 		break;
 	}
@@ -391,8 +391,8 @@ static void menuKeyCommands()
 				currentPage = WATERFALL_PAGE;
 			if (ImGui::IsKeyPressed(SDLK_5))
 				currentPage = IMPORT_PAGE;
-			if (ImGui::IsKeyPressed(SDLK_6))
-				currentPage = DB_PAGE;
+			/*if (ImGui::IsKeyPressed(SDLK_6))
+				currentPage = DB_PAGE;*/
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_UP))
 				incrementSelectedId(currentPage == GRID_PAGE ? -BANK_GRID_WIDTH : -1);
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_DOWN))
@@ -1166,8 +1166,7 @@ void renderMain()
 				"Effect Editor",
 				"Grid XY View",
 				"Waterfall View",
-				"Import",
-				"WaveEdit Online"};
+				"Import"};
 			static int hoveredTab = 0;
 			ImGui::TabLabels(NUM_PAGES, tabLabels, (int *)&currentPage, NULL, false, &hoveredTab);
 		}
@@ -1193,9 +1192,9 @@ void renderMain()
 		case IMPORT_PAGE:
 			importPage();
 			break;
-		case DB_PAGE:
+		/*case DB_PAGE:
 			dbPage();
-			break;
+			break;*/
 		default:
 			break;
 		}
