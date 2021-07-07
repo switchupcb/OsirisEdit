@@ -1147,9 +1147,9 @@ void renderMain()
 		renderPreview();
 		// Tab bar
 
-		// OOGA
+		// Selectable Bank Length
 		const char *bankLens[] = {"16", "32", "64"};
-		static int len = 0;
+		static int len = 1;
 		ImGui::PushItemWidth(100.0);
 		ImGui::Combo("##width", &len, bankLens, IM_ARRAYSIZE(bankLens));
 		ImGui::PopItemWidth();
