@@ -490,7 +490,7 @@ void renderMenu()
 	{
 		int width, height;
 		getImageSize(logoTexture, &width, &height);
-		ImVec2 padding = ImVec2(8, 4);
+		ImVec2 padding = ImVec2(7, 4);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, padding);
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
