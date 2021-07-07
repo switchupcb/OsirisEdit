@@ -168,7 +168,11 @@ static void menuManual()
 
 static void menuWebsite()
 {
-	openBrowser("http://synthtech.com/waveedit");
+	openBrowser("https://modbap.com/osiris-edit/");
+}
+
+static void menuSynthtech() {
+	openBrowser("https://synthtech.com/waveedit");
 }
 
 static void menuNewBank()
@@ -581,10 +585,10 @@ void renderMenu()
 		// Help
 		if (ImGui::BeginMenu("Help"))
 		{
-			if (ImGui::MenuItem("Manual PDF", "F1", false))
-				menuManual();
 			if (ImGui::MenuItem("Webpage", "", false))
 				menuWebsite();
+			if (ImGui::MenuItem("SynthTech", "", false))
+				menuSynthtech();
 			// if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
 			ImGui::EndMenu();
 		}
