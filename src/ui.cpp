@@ -729,7 +729,6 @@ void renderPopup()
 		{
 			if (!error)
 			{
-				// LOGIC
 				// Save Info
 				long bitData[] = {SF_FORMAT_PCM_S8, SF_FORMAT_PCM_16, SF_FORMAT_PCM_32};
 				SF_INFO info;
@@ -767,37 +766,28 @@ void renderPopup()
 				sourceFiles.erase(std::find(sourceFiles.begin(), sourceFiles.end(), ""));
 				std::sort(sourceFiles.begin(), sourceFiles.end());
 
-				// bitmasking for real 5 head 200 iq galaxy brained individual logic that no mortal could understand
+				// Bitmask the source files.
 				int j = 0;
 				for (auto i = sourceFiles.begin(); i != sourceFiles.end(); i++)
 				{
-					if (j >= BANK_LEN * 4) {
+					if (createBanks && j >= BANK_LEN * 4) {
 						break;
-					}
+					} // Convert all source files if createBanks is not selected.
+
+					std::string loadSourceFileName = sourceFilename;
+					std::string osirisConvertFolder = convertFilename;
+					loadSourceFileName += "/" + *i;
+					osirisConvertFolder += "/Osiris/";
+
 					if (createBanks)
 					{
 						int letterIndex = j / BANK_LEN;
-						std::string osirisExportFolder = convertFilename;	
-						osirisExportFolder += "/Osiris/" + std::string(1, 'A' + letterIndex);
-						createFolder(osirisExportFolder.c_str());
-						std::string loadSourceFileName = sourceFilename;
-						// Using char[] instead of string gives me aids.
-						loadSourceFileName += "/" + *i;
-						std::cout << loadSourceFileName << " " << osirisExportFolder + "/Osiris_" + *i << bankSizes[sizes] << "\n";
-						convertBank.loadWAV(loadSourceFileName.c_str());
-						convertBank.saveWAV((osirisExportFolder + "/Osiris_" + *i).c_str(), info, atoi(bankSizes[sizes]), atoi(waveLengths[wavelength]));
+						osirisConvertFolder += std::string(1, 'A' + letterIndex);
+						createFolder(osirisConvertFolder.c_str());
 					}
-					else
-					{
-						std::string osirisExportFolder = convertFilename;
-						osirisExportFolder += "/Osiris/";
-						std::string loadSourceFileName = sourceFilename;
-						// Using char[] instead of string gives me aids.
-						loadSourceFileName += "/" + *i;
-						std::cout << loadSourceFileName << " " << osirisExportFolder + "/Osiris_" + *i << "\n";
-						convertBank.loadWAV(loadSourceFileName.c_str());
-						convertBank.saveWAV((osirisExportFolder + "/Osiris_" + *i).c_str(), info, atoi(bankSizes[sizes]), atoi(waveLengths[wavelength]));
-					}
+					
+					convertBank.loadWAV(loadSourceFileName.c_str());
+					convertBank.saveWAV((osirisConvertFolder + "/Osiris_" + *i).c_str(), info, atoi(bankSizes[sizes]), atoi(waveLengths[wavelength]));
 					j++;
 				}
 				ImGui::CloseCurrentPopup();
