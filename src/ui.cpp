@@ -355,7 +355,9 @@ static void menuKeyCommands()
 			if (lastSelectedId - selectedId != 0)
 			{
 				menuCopyAll();
-			} else {
+			}
+			else
+			{
 				menuCopy();
 			}
 		}
@@ -411,11 +413,12 @@ void renderWaveMenu()
 	else
 		snprintf(menuName, sizeof(menuName), "(Wave %d)", selectedId);
 	ImGui::MenuItem(menuName, NULL, false, false);
-	if (selectedId - lastSelectedId != 0) {
-		if (ImGui::MenuItem("Copy All", ImGui::GetIO().OSXBehaviors ? "Cmd+C" : "Ctrl+C", false, selectedId - lastSelectedId != 0))
+	if (selectedId - lastSelectedId != 0)
 	{
-		menuCopyAll();
-	}
+		if (ImGui::MenuItem("Copy All", ImGui::GetIO().OSXBehaviors ? "Cmd+C" : "Ctrl+C", false, selectedId - lastSelectedId != 0))
+		{
+			menuCopyAll();
+		}
 	}
 	if (ImGui::MenuItem("Paste All", ImGui::GetIO().OSXBehaviors ? "Cmd+V" : "Ctrl+V", false, clipboardArrayActive))
 	{
@@ -730,6 +733,7 @@ void renderPopup()
 		{
 			if (!error)
 			{
+				// LOGIC
 				// Save Info
 				long bitData[] = {SF_FORMAT_PCM_S8, SF_FORMAT_PCM_16, SF_FORMAT_PCM_32};
 				SF_INFO info;
@@ -773,9 +777,16 @@ void renderPopup()
 						char letter = 'A' + j;
 						osirisExportFolder += "/osiris/" + std::string(1, letter);
 						createFolder(osirisExportFolder.c_str());
+						// showCurrentBankPage();
+						// currentBank.loadWAV(path);
+						// snprintf(lastFilename, sizeof(lastFilename), "%s", path);
+						// historyPush();
 						for (auto i = files.begin(); i != files.end(); i++)
 						{
-							exportBank.loadWAV(i->c_str());
+							std::string loadSourceFileName = sourceFilename;
+							// Using char[] instead of string gives me aids.
+							loadSourceFileName += "/" + *i;
+							exportBank.loadWAV(loadSourceFileName.c_str());
 							exportBank.saveWAV((osirisExportFolder + "/" + *i).c_str(), info, atoi(bankSizesH[height]), atoi(waveLengths[wavelength]));
 						}
 					}
