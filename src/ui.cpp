@@ -769,6 +769,9 @@ void renderPopup()
 				int j = 0;
 				for (auto i = sourceFiles.begin(); i != sourceFiles.end(); i++)
 				{
+					if (i->rfind(".wav") != abs((int) i->size()-4)) {
+						continue;
+					}
 					if (createBanks && j >= BANK_LEN * 4)
 					{
 						break;
@@ -790,7 +793,7 @@ void renderPopup()
 					else
 					{
 						std::string osirisExportFolder = convertFilename;
-						osirisExportFolder += "/Osiris/";
+						osirisExportFolder += "/Osiris";
 						std::string loadSourceFileName = sourceFilename;
 						// Using char[] instead of string gives me aids.
 						loadSourceFileName += "/" + *i;
