@@ -763,31 +763,41 @@ void renderPopup()
 				closedir(dir);
 				sourceFiles.erase(std::find(sourceFiles.begin(), sourceFiles.end(), "."));
 				sourceFiles.erase(std::find(sourceFiles.begin(), sourceFiles.end(), ".."));
-				sourceFiles.erase(std::find(sourceFiles.begin(), sourceFiles.end(), ""));
 				std::sort(sourceFiles.begin(), sourceFiles.end());
 
 				// Bitmask the source files.
 				int j = 0;
 				for (auto i = sourceFiles.begin(); i != sourceFiles.end(); i++)
 				{
-					if (createBanks && j >= BANK_LEN * 4) {
+					if (createBanks && j >= BANK_LEN * 4)
+					{
 						break;
 					} // Convert all source files if createBanks is not selected.
-
-					std::string loadSourceFileName = sourceFilename;
-					std::string osirisConvertFolder = convertFilename;
-					loadSourceFileName += "/" + *i;
-					osirisConvertFolder += "/Osiris/";
 
 					if (createBanks)
 					{
 						int letterIndex = j / BANK_LEN;
-						osirisConvertFolder += std::string(1, 'A' + letterIndex);
-						createFolder(osirisConvertFolder.c_str());
+						std::string osirisExportFolder = convertFilename;
+						osirisExportFolder += "/Osiris/" + std::string(1, 'A' + letterIndex);
+						createFolder(osirisExportFolder.c_str());
+						std::string loadSourceFileName = sourceFilename;
+						// Using char[] instead of string gives me aids.
+						loadSourceFileName += "/" + *i;
+						std::cout << loadSourceFileName << " " << osirisExportFolder + "/Osiris_" + *i << bankSizes[sizes] << "\n";
+						convertBank.loadWAV(loadSourceFileName.c_str());
+						convertBank.saveWAV((osirisExportFolder + "/Osiris_" + *i).c_str(), info, atoi(bankSizes[sizes]), atoi(waveLengths[wavelength]));
 					}
-					
-					convertBank.loadWAV(loadSourceFileName.c_str());
-					convertBank.saveWAV((osirisConvertFolder + "/Osiris_" + *i).c_str(), info, atoi(bankSizes[sizes]), atoi(waveLengths[wavelength]));
+					else
+					{
+						std::string osirisExportFolder = convertFilename;
+						osirisExportFolder += "/Osiris/";
+						std::string loadSourceFileName = sourceFilename;
+						// Using char[] instead of string gives me aids.
+						loadSourceFileName += "/" + *i;
+						std::cout << loadSourceFileName << " " << osirisExportFolder + "/Osiris_" + *i << "\n";
+						convertBank.loadWAV(loadSourceFileName.c_str());
+						convertBank.saveWAV((osirisExportFolder + "/Osiris_" + *i).c_str(), info, atoi(bankSizes[sizes]), atoi(waveLengths[wavelength]));
+					}
 					j++;
 				}
 				ImGui::CloseCurrentPopup();
