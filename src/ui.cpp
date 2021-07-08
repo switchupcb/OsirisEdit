@@ -739,7 +739,7 @@ void renderPopup()
 
 				// Make Folders
 				std::string osirisFolder = convertFilename;
-				osirisFolder += "/osiris";
+				osirisFolder += "/Osiris";
 				if (createFolder(osirisFolder.c_str()) != 0)
 				{
 					removeFolder(osirisFolder.c_str());
@@ -764,24 +764,28 @@ void renderPopup()
 				closedir(dir);
 				sourceFiles.erase(std::find(sourceFiles.begin(), sourceFiles.end(), "."));
 				sourceFiles.erase(std::find(sourceFiles.begin(), sourceFiles.end(), ".."));
+				sourceFiles.erase(std::find(sourceFiles.begin(), sourceFiles.end(), ""));
 				std::sort(sourceFiles.begin(), sourceFiles.end());
 
 				// bitmasking for real 5 head 200 iq galaxy brained individual logic that no mortal could understand
 				int j = 0;
-				for (auto i = sourceFiles.begin(); i != sourceFiles.end(), j < BANK_LEN * 4; i++, j++)
+				for (auto i = sourceFiles.begin(); i != sourceFiles.end(); i++)
 				{
+					if (j >= BANK_LEN * 4) {
+						break;
+					}
 					if (createBanks)
 					{
-						int letterIndex = j % BANK_LEN;
+						int letterIndex = j / BANK_LEN;
 						std::string osirisExportFolder = convertFilename;	
 						osirisExportFolder += "/Osiris/" + std::string(1, 'A' + letterIndex);
 						createFolder(osirisExportFolder.c_str());
 						std::string loadSourceFileName = sourceFilename;
 						// Using char[] instead of string gives me aids.
 						loadSourceFileName += "/" + *i;
+						std::cout << loadSourceFileName << " " << osirisExportFolder + "/Osiris_" + *i << bankSizes[sizes] << "\n";
 						convertBank.loadWAV(loadSourceFileName.c_str());
 						convertBank.saveWAV((osirisExportFolder + "/Osiris_" + *i).c_str(), info, atoi(bankSizes[sizes]), atoi(waveLengths[wavelength]));
-						
 					}
 					else
 					{
@@ -790,12 +794,12 @@ void renderPopup()
 						std::string loadSourceFileName = sourceFilename;
 						// Using char[] instead of string gives me aids.
 						loadSourceFileName += "/" + *i;
+						std::cout << loadSourceFileName << " " << osirisExportFolder + "/Osiris_" + *i << "\n";
 						convertBank.loadWAV(loadSourceFileName.c_str());
 						convertBank.saveWAV((osirisExportFolder + "/Osiris_" + *i).c_str(), info, atoi(bankSizes[sizes]), atoi(waveLengths[wavelength]));
 					}
 					j++;
 				}
-
 				ImGui::CloseCurrentPopup();
 				showConvertPopup = false;
 				/// ADD "Conversion Complete." POPUP
