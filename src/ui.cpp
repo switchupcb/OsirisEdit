@@ -46,7 +46,7 @@ enum Page
 	GRID_PAGE,
 	WATERFALL_PAGE,
 	IMPORT_PAGE,
-	DB_PAGE,
+	//DB_PAGE,
 	NUM_PAGES
 };
 
@@ -153,9 +153,9 @@ static void showCurrentBankPage()
 	{
 	case EFFECT_PAGE:
 	case IMPORT_PAGE:
-	case DB_PAGE:
+	/*case DB_PAGE:
 		currentPage = EDITOR_PAGE;
-		break;
+		break;*/
 	default:
 		break;
 	}
@@ -168,7 +168,12 @@ static void menuManual()
 
 static void menuWebsite()
 {
-	openBrowser("http://synthtech.com/waveedit");
+	openBrowser("https://modbap.com/osiris-edit/");
+}
+
+static void menuSynthtech()
+{
+	openBrowser("https://synthtech.com/waveedit");
 }
 
 static void menuNewBank()
@@ -389,8 +394,8 @@ static void menuKeyCommands()
 				currentPage = WATERFALL_PAGE;
 			if (ImGui::IsKeyPressed(SDLK_5))
 				currentPage = IMPORT_PAGE;
-			if (ImGui::IsKeyPressed(SDLK_6))
-				currentPage = DB_PAGE;
+			/*if (ImGui::IsKeyPressed(SDLK_6))
+				currentPage = DB_PAGE;*/
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_UP))
 				incrementSelectedId(currentPage == GRID_PAGE ? -BANK_GRID_WIDTH : -1);
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_DOWN))
@@ -489,7 +494,7 @@ void renderMenu()
 	{
 		int width, height;
 		getImageSize(logoTexture, &width, &height);
-		ImVec2 padding = ImVec2(8, 4);
+		ImVec2 padding = ImVec2(7, 4);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, padding);
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -584,10 +589,10 @@ void renderMenu()
 		// Help
 		if (ImGui::BeginMenu("Help"))
 		{
-			if (ImGui::MenuItem("Manual PDF", "F1", false))
-				menuManual();
 			if (ImGui::MenuItem("Webpage", "", false))
 				menuWebsite();
+			if (ImGui::MenuItem("SynthTech", "", false))
+				menuSynthtech();
 			// if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
 			ImGui::EndMenu();
 		}
@@ -650,14 +655,17 @@ void renderPopup()
 		ImGui::Combo("##depth", &depth, bitDepths, IM_ARRAYSIZE(bitDepths));
 
 		// Wave Bank Length (Width * Height)
-		const char *bankSizesH[] = {"16", "32", "64"};
-		const char *bankSizesW[] = {"16", "32", "64"};
-		static int height = 1;
-		static int width = 1;
+		const char *bankSizes[] = {"16", "32", "64"};
+		static int sizes = 1;
 
 		ImGui::Text("Bank Length:");
 		ImGui::SameLine();
-		ImGui::Combo("##width", &width, bankSizesH, IM_ARRAYSIZE(bankSizesH));
+		ImGui::Combo("##sizes", &sizes, bankSizes, IM_ARRAYSIZE(bankSizes));
+
+		// const char *bankSizesH[] = {"16", "32", "64"};
+		// const char *bankSizesW[] = {"16", "32", "64"};
+		// static int height = 1;
+		// static int width = 1;
 
 		// ImGui::Text("Bank Height:");
 		// ImGui::SameLine();
@@ -696,37 +704,25 @@ void renderPopup()
 			free(dir);
 		}
 
+		// Selected Banks
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 		ImGui::Text("CREATE BANKS");
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
-		// Selected Banks
-		/// Banks A, B, C, D are selectable.
-		static bool bankA, bankB, bankC, bankD;
-		ImGui::Text("A");
+
+		static bool createBanks;
+		ImGui::Text("Separate Into Banks A - D");
 		ImGui::SameLine();
-		ImGui::Checkbox("##A", &bankA);
-		ImGui::SameLine();
-		ImGui::Text("B");
-		ImGui::SameLine();
-		ImGui::Checkbox("##B", &bankB);
-		ImGui::SameLine();
-		ImGui::Text("C");
-		ImGui::SameLine();
-		ImGui::Checkbox("##C", &bankC);
-		ImGui::SameLine();
-		ImGui::Text("D");
-		ImGui::SameLine();
-		ImGui::Checkbox("##D", &bankD);
+		ImGui::Checkbox("##createBanks", &createBanks);
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
-		bool error = depth < 0 || rate < 0 || wavelength < 0 || (!bankA && !bankB && !bankC && !bankD);
+		bool error = depth < 0 || rate < 0 || wavelength < 0;
 		if (error)
 		{
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(ImColor(255, 0, 0)));
-			ImGui::Text("Must select bit depth, sample rate, wavelength, at least one folder, and a valid directory");
+			ImGui::Text("Must select bit depth, sample rate, wavelength, and a valid directory");
 			ImGui::PopStyleColor();
 		}
 		if (ImGui::Button("Convert"))
@@ -741,7 +737,7 @@ void renderPopup()
 				info.channels = 1;
 				info.format = SF_FORMAT_WAV | bitData[depth] | SF_ENDIAN_LITTLE;
 
-				// Make folders
+				// Make Folders
 				std::string osirisFolder = convertFilename;
 				osirisFolder += "/osiris";
 				if (createFolder(osirisFolder.c_str()) != 0)
@@ -750,49 +746,59 @@ void renderPopup()
 					createFolder(osirisFolder.c_str());
 				}
 
-				// ASDF
-				Bank exportBank;
-				std::vector<std::string> files;
+				// Convert the Source Files
+				Bank convertBank;
+				std::vector<std::string> sourceFiles;
 				DIR *dir;
 				dir = opendir(sourceFilename);
 				if (dir == NULL)
 				{
-					ImGui::EndPopup();
+					ImGui::EndPopup(); /// REPLACE WITH "Conversion Complete." POPUP
 					return;
 				}
+
+				// Read the source files
 				struct dirent *ent;
 				while ((ent = readdir(dir)) != NULL)
-					files.push_back(ent->d_name);
+					sourceFiles.push_back(ent->d_name);
 				closedir(dir);
-				files.erase(std::find(files.begin(), files.end(), "."));
-				files.erase(std::find(files.begin(), files.end(), ".."));
-				std::sort(files.begin(), files.end());
+				sourceFiles.erase(std::find(sourceFiles.begin(), sourceFiles.end(), "."));
+				sourceFiles.erase(std::find(sourceFiles.begin(), sourceFiles.end(), ".."));
+				std::sort(sourceFiles.begin(), sourceFiles.end());
 
-				bool boolArr[] = {bankA, bankB, bankC, bankD};
-				for (int j = 0; j < 4; j++)
+				// bitmasking for real 5 head 200 iq galaxy brained individual logic that no mortal could understand
+				int j = 0;
+				for (auto i = sourceFiles.begin(); i != sourceFiles.end(), j < BANK_LEN * 4; i++, j++)
 				{
-					if (boolArr[j])
+					if (createBanks)
+					{
+						int letterIndex = j % BANK_LEN;
+						std::string osirisExportFolder = convertFilename;	
+						osirisExportFolder += "/Osiris/" + std::string(1, 'A' + letterIndex);
+						createFolder(osirisExportFolder.c_str());
+						std::string loadSourceFileName = sourceFilename;
+						// Using char[] instead of string gives me aids.
+						loadSourceFileName += "/" + *i;
+						convertBank.loadWAV(loadSourceFileName.c_str());
+						convertBank.saveWAV((osirisExportFolder + "/Osiris_" + *i).c_str(), info, atoi(bankSizes[sizes]), atoi(waveLengths[wavelength]));
+						
+					}
+					else
 					{
 						std::string osirisExportFolder = convertFilename;
-						char letter = 'A' + j;
-						osirisExportFolder += "/osiris/" + std::string(1, letter);
-						createFolder(osirisExportFolder.c_str());
-						// showCurrentBankPage();
-						// currentBank.loadWAV(path);
-						// snprintf(lastFilename, sizeof(lastFilename), "%s", path);
-						// historyPush();
-						for (auto i = files.begin(); i != files.end(); i++)
-						{
-							std::string loadSourceFileName = sourceFilename;
-							// Using char[] instead of string gives me aids.
-							loadSourceFileName += "/" + *i;
-							exportBank.loadWAV(loadSourceFileName.c_str());
-							exportBank.saveWAV((osirisExportFolder + "/" + *i).c_str(), info, atoi(bankSizesH[height]), atoi(waveLengths[wavelength]));
-						}
+						osirisExportFolder += "/Osiris/";
+						std::string loadSourceFileName = sourceFilename;
+						// Using char[] instead of string gives me aids.
+						loadSourceFileName += "/" + *i;
+						convertBank.loadWAV(loadSourceFileName.c_str());
+						convertBank.saveWAV((osirisExportFolder + "/Osiris_" + *i).c_str(), info, atoi(bankSizes[sizes]), atoi(waveLengths[wavelength]));
 					}
+					j++;
 				}
+
 				ImGui::CloseCurrentPopup();
 				showConvertPopup = false;
+				/// ADD "Conversion Complete." POPUP
 			}
 		}
 		ImGui::SameLine();
@@ -1158,9 +1164,9 @@ void renderMain()
 		renderPreview();
 		// Tab bar
 
-		// OOGA
+		// Selectable Bank Length
 		const char *bankLens[] = {"16", "32", "64"};
-		static int len = 0;
+		static int len = 1;
 		ImGui::PushItemWidth(100.0);
 		ImGui::Combo("##width", &len, bankLens, IM_ARRAYSIZE(bankLens));
 		ImGui::PopItemWidth();
@@ -1173,8 +1179,7 @@ void renderMain()
 				"Effect Editor",
 				"Grid XY View",
 				"Waterfall View",
-				"Import",
-				"WaveEdit Online"};
+				"Import"};
 			static int hoveredTab = 0;
 			ImGui::TabLabels(NUM_PAGES, tabLabels, (int *)&currentPage, NULL, false, &hoveredTab);
 		}
@@ -1200,9 +1205,9 @@ void renderMain()
 		case IMPORT_PAGE:
 			importPage();
 			break;
-		case DB_PAGE:
+		/*case DB_PAGE:
 			dbPage();
-			break;
+			break;*/
 		default:
 			break;
 		}
