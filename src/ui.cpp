@@ -651,14 +651,17 @@ void renderPopup()
 		ImGui::Combo("##depth", &depth, bitDepths, IM_ARRAYSIZE(bitDepths));
 
 		// Wave Bank Length (Width * Height)
-		const char *bankSizesH[] = {"16", "32", "64"};
-		const char *bankSizesW[] = {"16", "32", "64"};
-		static int height = 1;
-		static int width = 1;
+		const char *bankSizes[] = { "16", "32", "64" };
+		static int sizes = 1;
 
 		ImGui::Text("Bank Length:");
 		ImGui::SameLine();
-		ImGui::Combo("##width", &width, bankSizesH, IM_ARRAYSIZE(bankSizesH));
+		ImGui::Combo("##sizes", &sizes, bankSizes, IM_ARRAYSIZE(bankSizes));
+
+		// const char *bankSizesH[] = {"16", "32", "64"};
+		// const char *bankSizesW[] = {"16", "32", "64"};
+		// static int height = 1;
+		// static int width = 1;
 
 		// ImGui::Text("Bank Height:");
 		// ImGui::SameLine();
@@ -697,37 +700,25 @@ void renderPopup()
 			free(dir);
 		}
 
+		// Selected Banks
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 		ImGui::Text("CREATE BANKS");
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
-		// Selected Banks
-		/// Banks A, B, C, D are selectable.
-		static bool bankA, bankB, bankC, bankD;
-		ImGui::Text("A");
+
+		static bool createBanks;
+		ImGui::Text("Separate Into Banks A - D");
 		ImGui::SameLine();
-		ImGui::Checkbox("##A", &bankA);
-		ImGui::SameLine();
-		ImGui::Text("B");
-		ImGui::SameLine();
-		ImGui::Checkbox("##B", &bankB);
-		ImGui::SameLine();
-		ImGui::Text("C");
-		ImGui::SameLine();
-		ImGui::Checkbox("##C", &bankC);
-		ImGui::SameLine();
-		ImGui::Text("D");
-		ImGui::SameLine();
-		ImGui::Checkbox("##D", &bankD);
+		ImGui::Checkbox("##createBanks", &createBanks);
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
-		bool error = depth < 0 || rate < 0 || wavelength < 0 || (!bankA && !bankB && !bankC && !bankD);
+		bool error = depth < 0 || rate < 0 || wavelength < 0;
 		if (error)
 		{
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(ImColor(255, 0, 0)));
-			ImGui::Text("Must select bit depth, sample rate, wavelength, at least one folder, and a valid directory");
+			ImGui::Text("Must select bit depth, sample rate, wavelength, and a valid directory");
 			ImGui::PopStyleColor();
 		}
 		if (ImGui::Button("Convert"))
@@ -741,7 +732,7 @@ void renderPopup()
 				info.channels = 1;
 				info.format = SF_FORMAT_WAV | bitData[depth] | SF_ENDIAN_LITTLE;
 
-				// Make folders
+				// Make Folders
 				std::string osirisFolder = convertFilename;
 				osirisFolder += "/osiris";
 				if (createFolder(osirisFolder.c_str()) != 0)
@@ -750,42 +741,45 @@ void renderPopup()
 					createFolder(osirisFolder.c_str());
 				}
 
-				// ASDF
-				Bank exportBank;
-				std::vector<std::string> files;
+				// Convert the Source Files
+				Bank convertBank;
+				std::vector<std::string> sourceFiles;
 				DIR *dir;
 				dir = opendir(sourceFilename);
 				if (dir == NULL)
 				{
-					ImGui::EndPopup();
+					ImGui::EndPopup(); /// REPLACE WITH "Conversion Complete." POPUP
 					return;
 				}
+
+				// Read the source files
 				struct dirent *ent;
 				while ((ent = readdir(dir)) != NULL)
-					files.push_back(ent->d_name);
+					sourceFiles.push_back(ent->d_name);
 				closedir(dir);
-				files.erase(std::find(files.begin(), files.end(), "."));
-				files.erase(std::find(files.begin(), files.end(), ".."));
-				std::sort(files.begin(), files.end());
+				sourceFiles.erase(std::find(sourceFiles.begin(), sourceFiles.end(), "."));
+				sourceFiles.erase(std::find(sourceFiles.begin(), sourceFiles.end(), ".."));
+				std::sort(sourceFiles.begin(), sourceFiles.end());
 
-				bool boolArr[] = {bankA, bankB, bankC, bankD};
-				for (int j = 0; j < 4; j++)
+				// Convert the files into the destination directory
+				int filesToConvert = createBanks && sourceFiles.size() > BANK_LEN * 4 ? BANK_LEN * 4 : sourceFiles.size();
+				for (int i = 0; i < filesToConvert; i++)
 				{
-					if (boolArr[j])
+					std::string osirisConvertFolder = convertFilename;
+					if (createBanks)
 					{
-						std::string osirisExportFolder = convertFilename;
-						char letter = 'A' + j;
-						osirisExportFolder += "/osiris/" + std::string(1, letter);
-						createFolder(osirisExportFolder.c_str());
-						for (auto i = files.begin(); i != files.end(); i++)
-						{
-							exportBank.loadWAV(i->c_str());
-							exportBank.saveWAV((osirisExportFolder + "/" + *i).c_str(), info, atoi(bankSizesH[height]), atoi(waveLengths[wavelength]));
-						}
+						char letter = 'A' + i / BANK_LEN;
+						osirisConvertFolder += "/Osiris/" + std::string(1, letter);
+						if (i % BANK_LEN == 0) createFolder(osirisConvertFolder.c_str());
 					}
+					std::string sourceFile = "Osiris_" + sourceFiles.at(i);
+					convertBank.loadWAV(sourceFile.c_str());
+					convertBank.saveWAV((osirisConvertFolder + "/" + sourceFile).c_str(), info, atoi(bankSizes[sizes]), atoi(waveLengths[wavelength]));
 				}
+						
 				ImGui::CloseCurrentPopup();
 				showConvertPopup = false;
+				/// ADD "Conversion Complete." POPUP
 			}
 		}
 		ImGui::SameLine();
