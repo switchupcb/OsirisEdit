@@ -1,6 +1,6 @@
 # OsirisEdit
 
-The modified wavetable and bank editor for the Synthesis Technology [E370](http://synthtech.com/eurorack/E370/) and [E352](http://synthtech.com/eurorack/E352/) Eurorack synthesizer modules.
+The modified wavetable and bank editor for the Osiris Eurorack synthesizer modules.
 
 ### Building
 
