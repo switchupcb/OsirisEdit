@@ -752,7 +752,7 @@ void renderPopup()
 				dir = opendir(sourceFilename);
 				if (dir == NULL)
 				{
-					ImGui::EndPopup(); /// REPLACE WITH "Conversion Complete." POPUP
+					ImGui::EndPopup();
 					return;
 				}
 
@@ -784,7 +784,6 @@ void renderPopup()
 						osirisExportFolder += "/Osiris/" + std::string(1, 'A' + letterIndex);
 						createFolder(osirisExportFolder.c_str());
 						std::string loadSourceFileName = sourceFilename;
-						// Using char[] instead of string gives me aids.
 						loadSourceFileName += "/" + *i;
 						std::cout << loadSourceFileName << " " << osirisExportFolder + "/Osiris_" + *i << bankSizes[sizes] << "\n";
 						convertBank.loadWAV(loadSourceFileName.c_str());
@@ -795,7 +794,6 @@ void renderPopup()
 						std::string osirisExportFolder = convertFilename;
 						osirisExportFolder += "/Osiris";
 						std::string loadSourceFileName = sourceFilename;
-						// Using char[] instead of string gives me aids.
 						loadSourceFileName += "/" + *i;
 						std::cout << loadSourceFileName << " " << osirisExportFolder + "/Osiris_" + *i << "\n";
 						convertBank.loadWAV(loadSourceFileName.c_str());
@@ -805,7 +803,6 @@ void renderPopup()
 				}
 				ImGui::CloseCurrentPopup();
 				showConvertPopup = false;
-				/// ADD "Conversion Complete." POPUP
 			}
 		}
 		ImGui::SameLine();
