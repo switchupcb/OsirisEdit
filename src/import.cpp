@@ -208,13 +208,13 @@ void importPage() {
 				BANK_LEN);
 		}
 
-		// Bank preview
-		ImGui::Text("Bank Preview");
+		// Wavetable preview
+		ImGui::Text("Wavetable Preview");
 		// Initialize from previous bank
 		float bankSamples[BANK_LEN * WAVE_LEN];
 		computeImport(bankSamples);
 		importBank.setSamples(bankSamples);
-		float deltaBank = renderBankWave("bank preview", 200.0, bankSamples,
+		float deltaBank = renderBankWave("wavetable preview", 200.0, bankSamples,
 			BANK_LEN * WAVE_LEN,
 			0,
 			BANK_LEN * WAVE_LEN,

@@ -519,13 +519,13 @@ void renderMenu()
 		// File
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("New Bank", ImGui::GetIO().OSXBehaviors ? "Cmd+N" : "Ctrl+N"))
+			if (ImGui::MenuItem("New Wavetable", ImGui::GetIO().OSXBehaviors ? "Cmd+N" : "Ctrl+N"))
 				menuNewBank();
-			if (ImGui::MenuItem("Open Bank...", ImGui::GetIO().OSXBehaviors ? "Cmd+O" : "Ctrl+O"))
+			if (ImGui::MenuItem("Open Wavetable...", ImGui::GetIO().OSXBehaviors ? "Cmd+O" : "Ctrl+O"))
 				menuOpenBank();
-			if (ImGui::MenuItem("Save Bank", ImGui::GetIO().OSXBehaviors ? "Cmd+S" : "Ctrl+S"))
+			if (ImGui::MenuItem("Save Wavetable", ImGui::GetIO().OSXBehaviors ? "Cmd+S" : "Ctrl+S"))
 				menuSaveBank();
-			if (ImGui::MenuItem("Save Bank As...", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+S" : "Ctrl+Shift+S"))
+			if (ImGui::MenuItem("Save Wavetable As...", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+S" : "Ctrl+Shift+S"))
 				menuSaveBankAs();
 			if (ImGui::MenuItem("Save Waves to Folder...", NULL))
 				menuSaveWaves();
@@ -711,7 +711,7 @@ void renderPopup()
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
 		static bool createBanks;
-		ImGui::Text("Separate Into Banks A - D");
+		ImGui::Text("Separate Into WavPak Banks A - D");
 		ImGui::SameLine();
 		ImGui::Checkbox("##createBanks", &createBanks);
 		ImGui::Dummy(ImVec2(0.0f, 5.0f));
