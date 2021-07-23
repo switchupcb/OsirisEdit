@@ -564,12 +564,12 @@ void renderMenu()
 		// Colors
 		if (ImGui::BeginMenu("Colors"))
 		{
-			if (ImGui::MenuItem("Sol", NULL, styleId == 0))
+			if (ImGui::MenuItem("Dark", NULL, styleId == 0))
 			{
 				styleId = 0;
 				refreshStyle();
 			}
-			if (ImGui::MenuItem("Mars", NULL, styleId == 1))
+			/*if (ImGui::MenuItem("Mars", NULL, styleId == 1))
 			{
 				styleId = 1;
 				refreshStyle();
@@ -578,8 +578,8 @@ void renderMenu()
 			{
 				styleId = 2;
 				refreshStyle();
-			}
-			if (ImGui::MenuItem("Titan", NULL, styleId == 3))
+			}*/
+			if (ImGui::MenuItem("Light", NULL, styleId == 3))
 			{
 				styleId = 3;
 				refreshStyle();
