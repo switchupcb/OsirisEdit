@@ -171,6 +171,11 @@ static void menuWebsite()
 	openBrowser("https://modbap.com/osiris-edit/");
 }
 
+static void menuGithub()
+{
+	openBrowser("https://github.com/switchupcb/OsirisEdit");
+}
+
 static void menuSynthtech()
 {
 	openBrowser("https://synthtech.com/waveedit");
@@ -591,8 +596,8 @@ void renderMenu()
 		{
 			if (ImGui::MenuItem("Webpage", "", false))
 				menuWebsite();
-			if (ImGui::MenuItem("SynthTech", "", false))
-				menuSynthtech();
+			if (ImGui::MenuItem("Github", "", false))
+				menuGithub();
 			// if (ImGui::MenuItem("imgui Demo", NULL, showTestWindow)) showTestWindow = !showTestWindow;
 			ImGui::EndMenu();
 		}
